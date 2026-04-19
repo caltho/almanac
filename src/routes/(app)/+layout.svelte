@@ -22,7 +22,7 @@
 			.toUpperCase()
 	);
 
-	const currentMilestone = 6;
+	const currentMilestone = 7;
 	const visibleNav = $derived(NAV_ITEMS.filter((n) => n.milestone <= currentMilestone));
 
 	function isActive(href: string) {

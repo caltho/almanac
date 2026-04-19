@@ -53,6 +53,7 @@
 		"vite-plugin-pwa": "^1.2.0"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "^0.90.0",
 		"@supabase/ssr": "^0.10.2",
 		"@supabase/supabase-js": "^2.103.3",
 		"@types/papaparse": "^5.5.2",
