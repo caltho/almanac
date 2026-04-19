@@ -5,7 +5,7 @@
 
 	let { data } = $props();
 	const name = $derived(data.profile?.display_name ?? data.user?.email?.split('@')[0] ?? 'you');
-	const currentMilestone = 5;
+	const currentMilestone = 6;
 	const domains = $derived(NAV_ITEMS.filter((n) => n.milestone <= currentMilestone));
 	const upcoming = $derived(NAV_ITEMS.filter((n) => n.milestone > currentMilestone));
 </script>
