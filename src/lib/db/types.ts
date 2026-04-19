@@ -33,6 +33,60 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			assets: {
+				Row: {
+					acquired_on: string | null;
+					archived_at: string | null;
+					created_at: string;
+					currency: string;
+					custom: Json;
+					id: string;
+					kind: Database['public']['Enums']['asset_kind'];
+					location: string | null;
+					name: string;
+					notes: string | null;
+					owner_id: string;
+					photo_url: string | null;
+					tags: string[];
+					updated_at: string;
+					value: number | null;
+				};
+				Insert: {
+					acquired_on?: string | null;
+					archived_at?: string | null;
+					created_at?: string;
+					currency?: string;
+					custom?: Json;
+					id?: string;
+					kind?: Database['public']['Enums']['asset_kind'];
+					location?: string | null;
+					name: string;
+					notes?: string | null;
+					owner_id: string;
+					photo_url?: string | null;
+					tags?: string[];
+					updated_at?: string;
+					value?: number | null;
+				};
+				Update: {
+					acquired_on?: string | null;
+					archived_at?: string | null;
+					created_at?: string;
+					currency?: string;
+					custom?: Json;
+					id?: string;
+					kind?: Database['public']['Enums']['asset_kind'];
+					location?: string | null;
+					name?: string;
+					notes?: string | null;
+					owner_id?: string;
+					photo_url?: string | null;
+					tags?: string[];
+					updated_at?: string;
+					value?: number | null;
+				};
+				Relationships: [];
+			};
 			budgets: {
 				Row: {
 					amount: number;
@@ -376,6 +430,39 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			net_worth_snapshots: {
+				Row: {
+					breakdown: Json;
+					created_at: string;
+					currency: string;
+					id: string;
+					note: string | null;
+					owner_id: string;
+					snapshot_date: string;
+					total_value: number;
+				};
+				Insert: {
+					breakdown?: Json;
+					created_at?: string;
+					currency?: string;
+					id?: string;
+					note?: string | null;
+					owner_id: string;
+					snapshot_date?: string;
+					total_value: number;
+				};
+				Update: {
+					breakdown?: Json;
+					created_at?: string;
+					currency?: string;
+					id?: string;
+					note?: string | null;
+					owner_id?: string;
+					snapshot_date?: string;
+					total_value?: number;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					avatar_url: string | null;
@@ -399,6 +486,110 @@ export type Database = {
 					updated_at?: string;
 				};
 				Relationships: [];
+			};
+			project_items: {
+				Row: {
+					created_at: string;
+					custom: Json;
+					done_at: string | null;
+					id: string;
+					notes: string | null;
+					order_index: number;
+					owner_id: string;
+					parent_item_id: string | null;
+					project_id: string;
+					title: string;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					custom?: Json;
+					done_at?: string | null;
+					id?: string;
+					notes?: string | null;
+					order_index?: number;
+					owner_id: string;
+					parent_item_id?: string | null;
+					project_id: string;
+					title: string;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					custom?: Json;
+					done_at?: string | null;
+					id?: string;
+					notes?: string | null;
+					order_index?: number;
+					owner_id?: string;
+					parent_item_id?: string | null;
+					project_id?: string;
+					title?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'project_items_parent_item_id_fkey';
+						columns: ['parent_item_id'];
+						isOneToOne: false;
+						referencedRelation: 'project_items';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'project_items_project_id_fkey';
+						columns: ['project_id'];
+						isOneToOne: false;
+						referencedRelation: 'projects';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			projects: {
+				Row: {
+					color: string | null;
+					created_at: string;
+					custom: Json;
+					description: string | null;
+					id: string;
+					name: string;
+					owner_id: string;
+					parent_id: string | null;
+					status: string;
+					updated_at: string;
+				};
+				Insert: {
+					color?: string | null;
+					created_at?: string;
+					custom?: Json;
+					description?: string | null;
+					id?: string;
+					name: string;
+					owner_id: string;
+					parent_id?: string | null;
+					status?: string;
+					updated_at?: string;
+				};
+				Update: {
+					color?: string | null;
+					created_at?: string;
+					custom?: Json;
+					description?: string | null;
+					id?: string;
+					name?: string;
+					owner_id?: string;
+					parent_id?: string | null;
+					status?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'projects_parent_id_fkey';
+						columns: ['parent_id'];
+						isOneToOne: false;
+						referencedRelation: 'projects';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 			shares: {
 				Row: {
@@ -527,7 +718,15 @@ export type Database = {
 					title?: string;
 					updated_at?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'tasks_project_id_fkey';
+						columns: ['project_id'];
+						isOneToOne: false;
+						referencedRelation: 'projects';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 			transactions: {
 				Row: {
@@ -611,6 +810,7 @@ export type Database = {
 			};
 		};
 		Enums: {
+			asset_kind: 'cash' | 'investment' | 'property' | 'vehicle' | 'possession' | 'other';
 			budget_period: 'weekly' | 'monthly' | 'yearly';
 			custom_attr_type:
 				| 'text'
@@ -754,6 +954,7 @@ export const Constants = {
 	},
 	public: {
 		Enums: {
+			asset_kind: ['cash', 'investment', 'property', 'vehicle', 'possession', 'other'],
 			budget_period: ['weekly', 'monthly', 'yearly'],
 			custom_attr_type: [
 				'text',
