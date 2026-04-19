@@ -11,7 +11,11 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"db:types": "supabase gen types typescript --linked > src/lib/db/types.ts",
+		"db:start": "supabase start",
+		"db:stop": "supabase stop",
+		"db:diff": "supabase db diff --linked"
 	},
 	"devDependencies": {
 		"@eslint/compat": "latest",
