@@ -3,7 +3,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { formatMoney } from '$lib/finance';
