@@ -12,10 +12,11 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"db:types": "supabase gen types typescript --linked 2>/dev/null > src/lib/db/types.ts",
-		"db:start": "supabase start",
-		"db:stop": "supabase stop",
-		"db:diff": "supabase db diff --linked"
+		"db:types": "C:/Users/callu/bin/supabase.exe gen types typescript --linked 2>NUL > src/lib/db/types.ts",
+		"db:push": "C:/Users/callu/bin/supabase.exe db push --yes",
+		"db:start": "C:/Users/callu/bin/supabase.exe start",
+		"db:stop": "C:/Users/callu/bin/supabase.exe stop",
+		"db:diff": "C:/Users/callu/bin/supabase.exe db diff --linked"
 	},
 	"devDependencies": {
 		"@eslint/compat": "latest",
@@ -53,6 +54,7 @@
 	},
 	"dependencies": {
 		"@supabase/ssr": "^0.10.2",
-		"@supabase/supabase-js": "^2.103.3"
+		"@supabase/supabase-js": "^2.103.3",
+		"zod": "^4.3.6"
 	}
 }

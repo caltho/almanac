@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Settings from '@lucide/svelte/icons/settings';
 	import LogOut from '@lucide/svelte/icons/log-out';
 	import Users from '@lucide/svelte/icons/users';
+	import { NAV_ITEMS } from '$lib/nav';
 
 	let { children, data } = $props();
 
@@ -19,6 +21,13 @@
 			.slice(0, 2)
 			.toUpperCase()
 	);
+
+	const currentMilestone = 2;
+	const visibleNav = $derived(NAV_ITEMS.filter((n) => n.milestone <= currentMilestone));
+
+	function isActive(href: string) {
+		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+	}
 </script>
 
 <div class="min-h-screen bg-background">
@@ -27,6 +36,23 @@
 			<a href="/" class="flex items-center gap-2 font-semibold tracking-tight">
 				<span class="text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Almanac</span>
 			</a>
+
+			<nav class="hidden items-center gap-1 md:flex">
+				{#each visibleNav as item (item.href)}
+					{@const Icon = item.icon}
+					<a
+						href={item.href}
+						class={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+							isActive(item.href)
+								? 'bg-muted text-foreground'
+								: 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+						}`}
+					>
+						<Icon class="size-4" />
+						<span>{item.label}</span>
+					</a>
+				{/each}
+			</nav>
 
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
@@ -75,6 +101,24 @@
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</div>
+
+		<!-- Mobile nav -->
+		<nav class="flex gap-1 overflow-x-auto border-t border-border/40 px-2 py-2 md:hidden">
+			{#each visibleNav as item (item.href)}
+				{@const Icon = item.icon}
+				<a
+					href={item.href}
+					class={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs ${
+						isActive(item.href)
+							? 'bg-muted text-foreground'
+							: 'text-muted-foreground hover:bg-muted/60'
+					}`}
+				>
+					<Icon class="size-3.5" />
+					<span>{item.label}</span>
+				</a>
+			{/each}
+		</nav>
 	</header>
 
 	<main class="mx-auto max-w-5xl px-4 py-8">

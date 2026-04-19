@@ -33,6 +33,87 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			custom_attribute_defs: {
+				Row: {
+					created_at: string;
+					id: string;
+					key: string;
+					label: string;
+					order_index: number;
+					owner_id: string;
+					required: boolean;
+					table_name: string;
+					type: Database['public']['Enums']['custom_attr_type'];
+					ui_hints: Json;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					key: string;
+					label: string;
+					order_index?: number;
+					owner_id: string;
+					required?: boolean;
+					table_name: string;
+					type: Database['public']['Enums']['custom_attr_type'];
+					ui_hints?: Json;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					key?: string;
+					label?: string;
+					order_index?: number;
+					owner_id?: string;
+					required?: boolean;
+					table_name?: string;
+					type?: Database['public']['Enums']['custom_attr_type'];
+					ui_hints?: Json;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			journal_entries: {
+				Row: {
+					body: string | null;
+					created_at: string;
+					custom: Json;
+					deleted_at: string | null;
+					entry_date: string;
+					id: string;
+					mood: number | null;
+					owner_id: string;
+					title: string | null;
+					updated_at: string;
+				};
+				Insert: {
+					body?: string | null;
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					entry_date?: string;
+					id?: string;
+					mood?: number | null;
+					owner_id: string;
+					title?: string | null;
+					updated_at?: string;
+				};
+				Update: {
+					body?: string | null;
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					entry_date?: string;
+					id?: string;
+					mood?: number | null;
+					owner_id?: string;
+					title?: string | null;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					avatar_url: string | null;
@@ -110,6 +191,17 @@ export type Database = {
 			find_user_by_email: { Args: { p_email: string }; Returns: string };
 		};
 		Enums: {
+			custom_attr_type:
+				| 'text'
+				| 'longtext'
+				| 'number'
+				| 'boolean'
+				| 'date'
+				| 'datetime'
+				| 'select'
+				| 'multiselect'
+				| 'url'
+				| 'rating';
 			share_perm: 'read' | 'comment' | 'write';
 		};
 		CompositeTypes: {
@@ -239,6 +331,18 @@ export const Constants = {
 	},
 	public: {
 		Enums: {
+			custom_attr_type: [
+				'text',
+				'longtext',
+				'number',
+				'boolean',
+				'date',
+				'datetime',
+				'select',
+				'multiselect',
+				'url',
+				'rating'
+			],
 			share_perm: ['read', 'comment', 'write']
 		}
 	}

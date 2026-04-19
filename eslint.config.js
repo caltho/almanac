@@ -42,7 +42,13 @@ export default defineConfig(
 		rules: {
 			// We use plain string hrefs throughout; resolve() is only beneficial
 			// for dynamic/typed routes and clutters simple nav links.
-			'svelte/no-navigation-without-resolve': 'off'
+			'svelte/no-navigation-without-resolve': 'off',
+			// Allow leading underscore to mark intentionally-unused bindings
+			// (e.g. {#each arr as _unused, i} for index-only iteration).
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+			]
 		}
 	}
 );
