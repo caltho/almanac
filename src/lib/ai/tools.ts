@@ -305,6 +305,59 @@ export function createTools(supabase: TypedClient, userId: string) {
 		}),
 
 		betaZodTool({
+			name: 'list_assets',
+			description: 'List active (non-archived) assets with id, name, kind, value, tags.',
+			inputSchema: z.object({
+				kind: z
+					.enum(['cash', 'investment', 'property', 'vehicle', 'possession', 'other'])
+					.optional()
+			}),
+			run: async ({ kind }) => {
+				let q = supabase
+					.from('assets')
+					.select('id, name, kind, value, currency, location, tags')
+					.is('archived_at', null)
+					.order('name');
+				if (kind) q = q.eq('kind', kind);
+				const { data, error } = await q;
+				if (error) return `error: ${error.message}`;
+				return JSON.stringify(data ?? []);
+			}
+		}),
+
+		betaZodTool({
+			name: 'create_asset',
+			description: 'Create an asset. kind defaults to "other".',
+			inputSchema: z.object({
+				name: z.string().min(1),
+				kind: z
+					.enum(['cash', 'investment', 'property', 'vehicle', 'possession', 'other'])
+					.optional(),
+				value: z.number().optional(),
+				location: z.string().optional(),
+				tags: z.array(z.string()).optional(),
+				notes: z.string().optional()
+			}),
+			run: async ({ name, kind, value, location, tags, notes }) => {
+				const { data, error } = await supabase
+					.from('assets')
+					.insert({
+						owner_id: userId,
+						name,
+						kind: (kind ?? 'other') as never,
+						value: value ?? null,
+						location: location ?? null,
+						tags: tags ?? [],
+						notes: notes ?? null
+					})
+					.select('id')
+					.single();
+				if (error) return `error: ${error.message}`;
+				return `created asset ${data.id}`;
+			}
+		}),
+
+		betaZodTool({
 			name: 'add_page_block',
 			description:
 				'Append a block to an existing page. For type="paragraph", content = { text }. For "heading", { text, level } (1|2|3). For "list", { items: string[], ordered: boolean }. For "checklist", { items: [{text, done}] }. For "data-point", { label, value, unit?, logged_at? }.',

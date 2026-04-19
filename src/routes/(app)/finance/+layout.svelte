@@ -7,7 +7,8 @@
 		{ href: '/finance/transactions', label: 'Transactions' },
 		{ href: '/finance/categories', label: 'Categories' },
 		{ href: '/finance/budgets', label: 'Budgets' },
-		{ href: '/finance/import', label: 'Import' }
+		{ href: '/finance/import', label: 'Import' },
+		{ href: '/finance/fields', label: 'Fields' }
 	];
 
 	function isActive(href: string) {
