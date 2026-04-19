@@ -33,6 +33,88 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			budgets: {
+				Row: {
+					amount: number;
+					category_id: string;
+					created_at: string;
+					currency: string;
+					id: string;
+					owner_id: string;
+					period: Database['public']['Enums']['budget_period'];
+					updated_at: string;
+				};
+				Insert: {
+					amount: number;
+					category_id: string;
+					created_at?: string;
+					currency?: string;
+					id?: string;
+					owner_id: string;
+					period?: Database['public']['Enums']['budget_period'];
+					updated_at?: string;
+				};
+				Update: {
+					amount?: number;
+					category_id?: string;
+					created_at?: string;
+					currency?: string;
+					id?: string;
+					owner_id?: string;
+					period?: Database['public']['Enums']['budget_period'];
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'budgets_category_id_fkey';
+						columns: ['category_id'];
+						isOneToOne: false;
+						referencedRelation: 'categories';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			categories: {
+				Row: {
+					color: string | null;
+					created_at: string;
+					id: string;
+					name: string;
+					owner_id: string;
+					parent_id: string | null;
+					rules: Json;
+					updated_at: string;
+				};
+				Insert: {
+					color?: string | null;
+					created_at?: string;
+					id?: string;
+					name: string;
+					owner_id: string;
+					parent_id?: string | null;
+					rules?: Json;
+					updated_at?: string;
+				};
+				Update: {
+					color?: string | null;
+					created_at?: string;
+					id?: string;
+					name?: string;
+					owner_id?: string;
+					parent_id?: string | null;
+					rules?: Json;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'categories_parent_id_fkey';
+						columns: ['parent_id'];
+						isOneToOne: false;
+						referencedRelation: 'categories';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			custom_attribute_defs: {
 				Row: {
 					created_at: string;
@@ -142,6 +224,118 @@ export type Database = {
 					updated_at?: string;
 				};
 				Relationships: [];
+			};
+			import_batches: {
+				Row: {
+					confirmed_at: string | null;
+					confirmed_rows: number;
+					created_at: string;
+					duplicate_rows: number;
+					filename: string | null;
+					id: string;
+					owner_id: string;
+					source: string | null;
+					status: Database['public']['Enums']['import_batch_status'];
+					total_rows: number;
+				};
+				Insert: {
+					confirmed_at?: string | null;
+					confirmed_rows?: number;
+					created_at?: string;
+					duplicate_rows?: number;
+					filename?: string | null;
+					id?: string;
+					owner_id: string;
+					source?: string | null;
+					status?: Database['public']['Enums']['import_batch_status'];
+					total_rows?: number;
+				};
+				Update: {
+					confirmed_at?: string | null;
+					confirmed_rows?: number;
+					created_at?: string;
+					duplicate_rows?: number;
+					filename?: string | null;
+					id?: string;
+					owner_id?: string;
+					source?: string | null;
+					status?: Database['public']['Enums']['import_batch_status'];
+					total_rows?: number;
+				};
+				Relationships: [];
+			};
+			import_staging_rows: {
+				Row: {
+					amount: number | null;
+					batch_id: string;
+					confirmed_category_id: string | null;
+					created_at: string;
+					description: string | null;
+					id: string;
+					include: boolean;
+					is_duplicate: boolean;
+					owner_id: string;
+					posted_at: string | null;
+					proposed_category_id: string | null;
+					proposed_source: string | null;
+					raw: Json;
+					row_index: number;
+				};
+				Insert: {
+					amount?: number | null;
+					batch_id: string;
+					confirmed_category_id?: string | null;
+					created_at?: string;
+					description?: string | null;
+					id?: string;
+					include?: boolean;
+					is_duplicate?: boolean;
+					owner_id: string;
+					posted_at?: string | null;
+					proposed_category_id?: string | null;
+					proposed_source?: string | null;
+					raw?: Json;
+					row_index: number;
+				};
+				Update: {
+					amount?: number | null;
+					batch_id?: string;
+					confirmed_category_id?: string | null;
+					created_at?: string;
+					description?: string | null;
+					id?: string;
+					include?: boolean;
+					is_duplicate?: boolean;
+					owner_id?: string;
+					posted_at?: string | null;
+					proposed_category_id?: string | null;
+					proposed_source?: string | null;
+					raw?: Json;
+					row_index?: number;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'import_staging_rows_batch_id_fkey';
+						columns: ['batch_id'];
+						isOneToOne: false;
+						referencedRelation: 'import_batches';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'import_staging_rows_confirmed_category_id_fkey';
+						columns: ['confirmed_category_id'];
+						isOneToOne: false;
+						referencedRelation: 'categories';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'import_staging_rows_proposed_category_id_fkey';
+						columns: ['proposed_category_id'];
+						isOneToOne: false;
+						referencedRelation: 'categories';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 			journal_entries: {
 				Row: {
@@ -335,6 +529,65 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			transactions: {
+				Row: {
+					amount: number;
+					category_id: string | null;
+					created_at: string;
+					currency: string;
+					custom: Json;
+					deleted_at: string | null;
+					description: string;
+					description_hash: string | null;
+					id: string;
+					owner_id: string;
+					posted_at: string;
+					raw: Json;
+					source: string;
+					updated_at: string;
+				};
+				Insert: {
+					amount: number;
+					category_id?: string | null;
+					created_at?: string;
+					currency?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					description: string;
+					description_hash?: string | null;
+					id?: string;
+					owner_id: string;
+					posted_at: string;
+					raw?: Json;
+					source?: string;
+					updated_at?: string;
+				};
+				Update: {
+					amount?: number;
+					category_id?: string | null;
+					created_at?: string;
+					currency?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					description?: string;
+					description_hash?: string | null;
+					id?: string;
+					owner_id?: string;
+					posted_at?: string;
+					raw?: Json;
+					source?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'transactions_category_id_fkey';
+						columns: ['category_id'];
+						isOneToOne: false;
+						referencedRelation: 'categories';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -350,8 +603,15 @@ export type Database = {
 				Returns: boolean;
 			};
 			find_user_by_email: { Args: { p_email: string }; Returns: string };
+			show_limit: { Args: never; Returns: number };
+			show_trgm: { Args: { '': string }; Returns: string[] };
+			suggest_category_by_similarity: {
+				Args: { p_description: string; p_min?: number };
+				Returns: string;
+			};
 		};
 		Enums: {
+			budget_period: 'weekly' | 'monthly' | 'yearly';
 			custom_attr_type:
 				| 'text'
 				| 'longtext'
@@ -363,6 +623,7 @@ export type Database = {
 				| 'multiselect'
 				| 'url'
 				| 'rating';
+			import_batch_status: 'staged' | 'confirmed' | 'cancelled';
 			share_perm: 'read' | 'comment' | 'write';
 			task_status: 'todo' | 'doing' | 'done' | 'cancelled';
 		};
@@ -493,6 +754,7 @@ export const Constants = {
 	},
 	public: {
 		Enums: {
+			budget_period: ['weekly', 'monthly', 'yearly'],
 			custom_attr_type: [
 				'text',
 				'longtext',
@@ -505,6 +767,7 @@ export const Constants = {
 				'url',
 				'rating'
 			],
+			import_batch_status: ['staged', 'confirmed', 'cancelled'],
 			share_perm: ['read', 'comment', 'write'],
 			task_status: ['todo', 'doing', 'done', 'cancelled']
 		}
