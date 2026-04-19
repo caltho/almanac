@@ -1,42 +1,56 @@
-# sv
+# Almanac
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Personal life-tracking PWA. Journal, sleep, tasks & habits, finance, assets & net worth, projects, Notion-lite pages, and an AI assistant — all behind magic-link auth with row-level granular sharing.
 
-## Creating a project
+Designed to be fully AI-coded: every meaningful directory ships with a `CLAUDE.md` that states intent, constraints, and extension points. Read the nearest `CLAUDE.md` before editing anything in its subtree. See [CLAUDE.md](CLAUDE.md) for the root guide and [PLAN.md](PLAN.md) for milestone progression.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Stack
 
-```sh
-# create a new project
-npx sv create my-app
+- **Frontend:** SvelteKit (TypeScript), installable PWA via `@vite-pwa/sveltekit`
+- **UI:** Tailwind CSS v4 + shadcn-svelte
+- **Backend:** Supabase (Postgres + Auth + Storage + Realtime) — RLS on every table
+- **AI:** Anthropic Claude via server-only tool-use loop
+- **Hosting:** Vercel (GitHub integration)
+
+## Local development
+
+```bash
+pnpm install
+cp .env.example .env.local   # fill in PUBLIC_SUPABASE_URL + keys
+pnpm dev
 ```
 
-To recreate this project with the same configuration:
+Useful scripts:
 
-```sh
-# recreate this project
-pnpm dlx sv@0.15.1 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography" sveltekit-adapter="adapter:vercel" --no-download-check --install pnpm .
+```bash
+pnpm check          # svelte-check + tsc
+pnpm lint           # prettier + eslint
+pnpm format         # prettier --write
+pnpm db:types       # regenerate src/lib/db/types.ts from linked Supabase
+pnpm db:push        # apply new migrations to the linked Supabase project
 ```
 
-## Developing
+## Structure
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```
+supabase/            # migrations, RLS policies, config
+src/lib/db/          # typed Supabase clients (browser, server, service)
+src/lib/auth/        # session helpers
+src/lib/shares/      # cross-user sharing primitives
+src/lib/custom-attrs/# user-definable attribute engine
+src/lib/journal/     # journal helpers
+src/lib/finance/     # CSV import, rule engine, pg_trgm categoriser
+src/lib/blocks/      # Notion-lite block registry (pages)
+src/lib/ai/          # Anthropic tool-use loop
+src/lib/sync/        # DEFERRED — offline-sync extension points
+src/routes/(auth)/   # /login + magic-link callback
+src/routes/(app)/    # authenticated app shell
+src/routes/api/ai/   # AI chat endpoint
 ```
 
-## Building
+## Non-negotiables
 
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- **RLS everywhere.** Default deny; policies added in the same migration that creates the table.
+- **Service-role key is server-only.** Only `src/lib/db/service.ts` reads it.
+- **Free tier only** — flag any change that would cost money before implementing.
+- **AI-first workflow.** New features arrive with a `CLAUDE.md` sibling; scope changes edit the relevant `CLAUDE.md`.
