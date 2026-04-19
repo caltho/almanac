@@ -39,6 +39,10 @@ export default defineConfig(
 	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			// We use plain string hrefs throughout; resolve() is only beneficial
+			// for dynamic/typed routes and clutters simple nav links.
+			'svelte/no-navigation-without-resolve': 'off'
+		}
 	}
 );
