@@ -75,6 +75,74 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			habit_checks: {
+				Row: {
+					check_date: string;
+					created_at: string;
+					habit_id: string;
+					id: string;
+					owner_id: string;
+				};
+				Insert: {
+					check_date?: string;
+					created_at?: string;
+					habit_id: string;
+					id?: string;
+					owner_id: string;
+				};
+				Update: {
+					check_date?: string;
+					created_at?: string;
+					habit_id?: string;
+					id?: string;
+					owner_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'habit_checks_habit_id_fkey';
+						columns: ['habit_id'];
+						isOneToOne: false;
+						referencedRelation: 'habits';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			habits: {
+				Row: {
+					archived_at: string | null;
+					cadence: string;
+					created_at: string;
+					custom: Json;
+					description: string | null;
+					id: string;
+					name: string;
+					owner_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					archived_at?: string | null;
+					cadence?: string;
+					created_at?: string;
+					custom?: Json;
+					description?: string | null;
+					id?: string;
+					name: string;
+					owner_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					archived_at?: string | null;
+					cadence?: string;
+					created_at?: string;
+					custom?: Json;
+					description?: string | null;
+					id?: string;
+					name?: string;
+					owner_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			journal_entries: {
 				Row: {
 					body: string | null;
@@ -174,6 +242,99 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			sleep_logs: {
+				Row: {
+					created_at: string;
+					custom: Json;
+					deleted_at: string | null;
+					hours_slept: number | null;
+					id: string;
+					log_date: string;
+					notes: string | null;
+					owner_id: string;
+					quality: number | null;
+					updated_at: string;
+					went_to_bed: string | null;
+					woke_up: string | null;
+				};
+				Insert: {
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					hours_slept?: number | null;
+					id?: string;
+					log_date?: string;
+					notes?: string | null;
+					owner_id: string;
+					quality?: number | null;
+					updated_at?: string;
+					went_to_bed?: string | null;
+					woke_up?: string | null;
+				};
+				Update: {
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					hours_slept?: number | null;
+					id?: string;
+					log_date?: string;
+					notes?: string | null;
+					owner_id?: string;
+					quality?: number | null;
+					updated_at?: string;
+					went_to_bed?: string | null;
+					woke_up?: string | null;
+				};
+				Relationships: [];
+			};
+			tasks: {
+				Row: {
+					completed_at: string | null;
+					created_at: string;
+					custom: Json;
+					deleted_at: string | null;
+					description: string | null;
+					due_date: string | null;
+					id: string;
+					owner_id: string;
+					priority: number | null;
+					project_id: string | null;
+					status: Database['public']['Enums']['task_status'];
+					title: string;
+					updated_at: string;
+				};
+				Insert: {
+					completed_at?: string | null;
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					description?: string | null;
+					due_date?: string | null;
+					id?: string;
+					owner_id: string;
+					priority?: number | null;
+					project_id?: string | null;
+					status?: Database['public']['Enums']['task_status'];
+					title: string;
+					updated_at?: string;
+				};
+				Update: {
+					completed_at?: string | null;
+					created_at?: string;
+					custom?: Json;
+					deleted_at?: string | null;
+					description?: string | null;
+					due_date?: string | null;
+					id?: string;
+					owner_id?: string;
+					priority?: number | null;
+					project_id?: string | null;
+					status?: Database['public']['Enums']['task_status'];
+					title?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			[_ in never]: never;
@@ -203,6 +364,7 @@ export type Database = {
 				| 'url'
 				| 'rating';
 			share_perm: 'read' | 'comment' | 'write';
+			task_status: 'todo' | 'doing' | 'done' | 'cancelled';
 		};
 		CompositeTypes: {
 			[_ in never]: never;
@@ -343,7 +505,8 @@ export const Constants = {
 				'url',
 				'rating'
 			],
-			share_perm: ['read', 'comment', 'write']
+			share_perm: ['read', 'comment', 'write'],
+			task_status: ['todo', 'doing', 'done', 'cancelled']
 		}
 	}
 } as const;

@@ -43,6 +43,10 @@ export default defineConfig(
 			// We use plain string hrefs throughout; resolve() is only beneficial
 			// for dynamic/typed routes and clutters simple nav links.
 			'svelte/no-navigation-without-resolve': 'off',
+			// Over-eager: triggers for local Date used in pure helper functions,
+			// not reactive state. Svelte 5 Date tracking is for components that
+			// want the instance itself to be reactive; our usage is one-shot.
+			'svelte/prefer-svelte-reactivity': 'off',
 			// Allow leading underscore to mark intentionally-unused bindings
 			// (e.g. {#each arr as _unused, i} for index-only iteration).
 			'@typescript-eslint/no-unused-vars': [
