@@ -9,10 +9,65 @@
 
 	let { data, form } = $props();
 
+	// Local, optimistic copy of the checks map. Seeded from server data on first
+	// render; mutated immediately on click, posted in the background. See
+	// /habits/api/+server.ts for the rollback story on error.
+	// svelte-ignore state_referenced_locally
+	let ticksLocal = $state<Record<string, Set<string>>>(
+		Object.fromEntries(Object.entries(data.ticks).map(([k, v]) => [k, new Set(v as string[])]))
+	);
+	// svelte-ignore state_referenced_locally
+	let habitsLocal = $state(data.habits);
+
 	let adding = $state(false);
+
+	const CADENCES = [
+		{ value: 'daily', label: 'Daily' },
+		{ value: 'weekdays', label: 'Weekdays' },
+		{ value: 'weekly', label: 'Weekly' },
+		{ value: 'monthly', label: 'Monthly' }
+	];
 
 	function shortDay(d: string) {
 		return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'narrow' });
+	}
+
+	async function toggle(habit_id: string, check_date: string) {
+		const set = ticksLocal[habit_id] ?? new Set<string>();
+		const wasTicked = set.has(check_date);
+		// Optimistic flip
+		if (wasTicked) set.delete(check_date);
+		else set.add(check_date);
+		ticksLocal = { ...ticksLocal, [habit_id]: new Set(set) };
+
+		try {
+			const res = await fetch('/habits/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'toggle', habit_id, check_date, done: !wasTicked })
+			});
+			if (!res.ok) throw new Error(await res.text());
+		} catch {
+			// Rollback on failure
+			if (wasTicked) set.add(check_date);
+			else set.delete(check_date);
+			ticksLocal = { ...ticksLocal, [habit_id]: new Set(set) };
+		}
+	}
+
+	async function archive(habit_id: string) {
+		const prev = habitsLocal;
+		habitsLocal = habitsLocal.filter((h) => h.id !== habit_id);
+		try {
+			const res = await fetch('/habits/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'archive', habit_id })
+			});
+			if (!res.ok) throw new Error();
+		} catch {
+			habitsLocal = prev;
+		}
 	}
 </script>
 
@@ -42,7 +97,14 @@
 		>
 			<Card.Content class="grid gap-3 pt-6 sm:grid-cols-[1fr_auto_auto]">
 				<Input name="name" placeholder="New habit…" required />
-				<Input name="cadence" placeholder="daily" class="sm:w-32" />
+				<select
+					name="cadence"
+					class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs sm:w-36"
+				>
+					{#each CADENCES as c (c.value)}
+						<option value={c.value}>{c.label}</option>
+					{/each}
+				</select>
 				<Button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add habit'}</Button>
 				{#if form?.error}
 					<p class="col-span-full text-sm text-destructive">{form.error}</p>
@@ -51,7 +113,7 @@
 		</form>
 	</Card.Root>
 
-	{#if data.habits.length === 0}
+	{#if habitsLocal.length === 0}
 		<p class="text-sm text-muted-foreground">No habits yet.</p>
 	{:else}
 		<div class="rounded-md border">
@@ -67,8 +129,8 @@
 				<span></span>
 			</div>
 			<ul class="divide-y divide-border">
-				{#each data.habits as h (h.id)}
-					{@const set = new Set(data.ticks[h.id] ?? [])}
+				{#each habitsLocal as h (h.id)}
+					{@const set = ticksLocal[h.id] ?? new Set<string>()}
 					<li class="grid grid-cols-[1fr_auto_auto] items-start gap-3 p-3">
 						<a href={`/habits/${h.id}`} class="min-w-0 space-y-1">
 							<div class="font-medium">{h.name}</div>
@@ -80,29 +142,29 @@
 						<div class="flex gap-1">
 							{#each data.days.slice().reverse() as d (d)}
 								{@const ticked = set.has(d)}
-								<form method="POST" action="?/toggle" use:enhance class="inline">
-									<input type="hidden" name="habit_id" value={h.id} />
-									<input type="hidden" name="check_date" value={d} />
-									<button
-										type="submit"
-										class={`grid size-7 place-items-center rounded border text-xs transition-colors ${
-											ticked
-												? 'border-primary bg-primary text-primary-foreground'
-												: 'border-border hover:bg-muted'
-										}`}
-										aria-label={`Toggle ${h.name} for ${d}`}
-									>
-										{#if ticked}✓{/if}
-									</button>
-								</form>
+								<button
+									type="button"
+									onclick={() => toggle(h.id, d)}
+									class={`grid size-7 place-items-center rounded border text-xs transition-colors ${
+										ticked
+											? 'border-primary bg-primary text-primary-foreground'
+											: 'border-border hover:bg-muted'
+									}`}
+									aria-label={`Toggle ${h.name} for ${d}`}
+								>
+									{#if ticked}✓{/if}
+								</button>
 							{/each}
 						</div>
-						<form method="POST" action="?/archive" use:enhance>
-							<input type="hidden" name="id" value={h.id} />
-							<Button type="submit" variant="ghost" size="icon-sm" aria-label="Archive">
-								<Archive class="size-4" />
-							</Button>
-						</form>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon-sm"
+							aria-label="Archive"
+							onclick={() => archive(h.id)}
+						>
+							<Archive class="size-4" />
+						</Button>
 					</li>
 				{/each}
 			</ul>

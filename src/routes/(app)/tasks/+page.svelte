@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
@@ -7,15 +6,45 @@
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 
-	let { data, form } = $props();
-	let adding = $state(false);
+	type Task = {
+		id: string;
+		title: string;
+		status: 'todo' | 'doing' | 'done' | 'cancelled';
+		due_date: string | null;
+		priority: number | null;
+		description: string | null;
+		custom: unknown;
+		updated_at: string;
+	};
+
+	let { data } = $props();
+
+	// Local mutable copy — every mutation flips the UI synchronously, then
+	// posts to /tasks/api. Rollback on failure. No server round-trip waits.
+	// svelte-ignore state_referenced_locally
+	let tasks = $state<Task[]>(data.tasks as Task[]);
+	let newTitle = $state('');
+	let error = $state<string | null>(null);
 
 	const byStatus = $derived({
-		todo: data.tasks.filter((t) => t.status === 'todo'),
-		doing: data.tasks.filter((t) => t.status === 'doing'),
-		done: data.tasks.filter((t) => t.status === 'done'),
-		cancelled: data.tasks.filter((t) => t.status === 'cancelled')
+		todo: tasks.filter((t) => t.status === 'todo'),
+		doing: tasks.filter((t) => t.status === 'doing'),
+		done: tasks.filter((t) => t.status === 'done'),
+		cancelled: tasks.filter((t) => t.status === 'cancelled')
 	});
+
+	const STATUS_LABELS = {
+		todo: 'To do',
+		doing: 'In progress',
+		done: 'Done',
+		cancelled: 'Cancelled'
+	} as const;
+	const STATUS_ORDER: ('todo' | 'doing' | 'done' | 'cancelled')[] = [
+		'todo',
+		'doing',
+		'done',
+		'cancelled'
+	];
 
 	function fmtDue(d: string | null) {
 		if (!d) return '';
@@ -31,19 +60,74 @@
 		return date.toLocaleDateString();
 	}
 
-	const STATUS_LABELS = {
-		todo: 'To do',
-		doing: 'In progress',
-		done: 'Done',
-		cancelled: 'Cancelled'
-	} as const;
+	async function toggleDone(task: Task) {
+		const prev = task.status;
+		const next = task.status === 'done' ? 'todo' : 'done';
+		task.status = next;
+		try {
+			const res = await fetch('/tasks/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'status', id: task.id, status: next })
+			});
+			if (!res.ok) throw new Error(await res.text());
+		} catch (e) {
+			task.status = prev;
+			error = e instanceof Error ? e.message : 'Failed to update';
+		}
+	}
 
-	const STATUS_ORDER: ('todo' | 'doing' | 'done' | 'cancelled')[] = [
-		'todo',
-		'doing',
-		'done',
-		'cancelled'
-	];
+	async function deleteTask(task: Task) {
+		const idx = tasks.findIndex((t) => t.id === task.id);
+		if (idx < 0) return;
+		const prev = tasks.slice();
+		tasks.splice(idx, 1);
+		try {
+			const res = await fetch('/tasks/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'delete', id: task.id })
+			});
+			if (!res.ok) throw new Error(await res.text());
+		} catch (e) {
+			tasks = prev;
+			error = e instanceof Error ? e.message : 'Failed to delete';
+		}
+	}
+
+	async function addTask(e: SubmitEvent) {
+		e.preventDefault();
+		const title = newTitle.trim();
+		if (!title) return;
+		newTitle = '';
+		// Optimistic placeholder with temp id until server echoes real row back.
+		const tempId = `tmp-${Math.random().toString(36).slice(2)}`;
+		const temp: Task = {
+			id: tempId,
+			title,
+			status: 'todo',
+			due_date: null,
+			priority: null,
+			description: null,
+			custom: {},
+			updated_at: new Date().toISOString()
+		};
+		tasks.unshift(temp);
+		try {
+			const res = await fetch('/tasks/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'create', title })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const body = (await res.json()) as { task: Task };
+			const idx = tasks.findIndex((t) => t.id === tempId);
+			if (idx >= 0) tasks[idx] = body.task;
+		} catch (err) {
+			tasks = tasks.filter((t) => t.id !== tempId);
+			error = err instanceof Error ? err.message : 'Failed to add';
+		}
+	}
 </script>
 
 <section class="space-y-6">
@@ -58,22 +142,18 @@
 		</Button>
 	</header>
 
-	<form
-		method="POST"
-		action="?/quickAdd"
-		use:enhance={() => {
-			adding = true;
-			return async ({ update }) => {
-				await update({ reset: true });
-				adding = false;
-			};
-		}}
-		class="flex gap-2"
-	>
-		<Input name="title" placeholder="Add a task and press enter…" required class="flex-1" />
-		<Button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add'}</Button>
+	<form onsubmit={addTask} class="flex gap-2">
+		<Input
+			bind:value={newTitle}
+			placeholder="Add a task and press enter…"
+			required
+			class="flex-1"
+		/>
+		<Button type="submit">Add</Button>
 	</form>
-	{#if form?.error}<p class="text-sm text-destructive">{form.error}</p>{/if}
+	{#if error}
+		<p class="text-sm text-destructive">{error}</p>
+	{/if}
 
 	<div class="space-y-6">
 		{#each STATUS_ORDER as status (status)}
@@ -86,25 +166,18 @@
 					<ul class="divide-y divide-border rounded-md border">
 						{#each list as t (t.id)}
 							<li class="flex items-start gap-3 p-3 text-sm">
-								<form method="POST" action="?/setStatus" class="shrink-0 pt-0.5" use:enhance>
-									<input type="hidden" name="id" value={t.id} />
-									<input
-										type="hidden"
-										name="status"
-										value={t.status === 'done' ? 'todo' : 'done'}
-									/>
-									<button
-										type="submit"
-										class={`grid size-4 place-items-center rounded border ${
-											t.status === 'done'
-												? 'border-primary bg-primary text-primary-foreground'
-												: 'border-border'
-										}`}
-										aria-label={t.status === 'done' ? 'Mark todo' : 'Mark done'}
-									>
-										{#if t.status === 'done'}✓{/if}
-									</button>
-								</form>
+								<button
+									type="button"
+									onclick={() => toggleDone(t)}
+									class={`mt-0.5 grid size-5 shrink-0 place-items-center rounded border transition-colors ${
+										t.status === 'done'
+											? 'border-primary bg-primary text-primary-foreground'
+											: 'border-border hover:border-foreground'
+									}`}
+									aria-label={t.status === 'done' ? 'Mark todo' : 'Mark done'}
+								>
+									{#if t.status === 'done'}✓{/if}
+								</button>
 
 								<a href={`/tasks/${t.id}`} class="min-w-0 flex-1 space-y-1">
 									<div
@@ -123,19 +196,22 @@
 									<AttrsRenderer defs={data.defs} values={t.custom as Record<string, unknown>} />
 								</a>
 
-								<form method="POST" action="?/delete" class="shrink-0" use:enhance>
-									<input type="hidden" name="id" value={t.id} />
-									<Button type="submit" variant="ghost" size="icon-sm" aria-label="Delete">
-										<Trash2 class="size-4" />
-									</Button>
-								</form>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									aria-label="Delete"
+									onclick={() => deleteTask(t)}
+								>
+									<Trash2 class="size-4" />
+								</Button>
 							</li>
 						{/each}
 					</ul>
 				</section>
 			{/if}
 		{/each}
-		{#if data.tasks.length === 0}
+		{#if tasks.length === 0}
 			<p class="text-sm text-muted-foreground">No tasks yet.</p>
 		{/if}
 	</div>

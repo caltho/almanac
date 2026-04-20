@@ -6,11 +6,25 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
 	import { AttrsEditor } from '$lib/custom-attrs';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data, form } = $props();
 
 	// svelte-ignore state_referenced_locally
+	let name = $state(data.asset.name);
+	// svelte-ignore state_referenced_locally
+	let kind = $state(data.asset.kind);
+	// svelte-ignore state_referenced_locally
+	let value = $state<number | string>(data.asset.value ?? '');
+	// svelte-ignore state_referenced_locally
+	let location = $state(data.asset.location ?? '');
+	// svelte-ignore state_referenced_locally
+	let tagsStr = $state((data.asset.tags ?? []).join(', '));
+	// svelte-ignore state_referenced_locally
+	let notes = $state(data.asset.notes ?? '');
+	// svelte-ignore state_referenced_locally
 	let values = $state<Record<string, unknown>>({ ...(data.asset.custom as object) });
+
 	let submitting = $state(false);
 
 	const ASSET_KINDS = ['cash', 'investment', 'property', 'vehicle', 'possession', 'other'] as const;
@@ -21,6 +35,11 @@
 </script>
 
 <section class="mx-auto max-w-2xl space-y-4">
+	<div class="flex items-center gap-2">
+		<BackButton href="/assets" />
+		<span class="text-xs tracking-widest text-muted-foreground uppercase">Assets</span>
+	</div>
+
 	<header class="flex items-center justify-between">
 		<h1 class="text-2xl font-semibold tracking-tight">Edit asset</h1>
 		{#if data.canEdit}
@@ -53,66 +72,37 @@
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="space-y-2">
 						<Label for="name">Name</Label>
-						<Input
-							id="name"
-							name="name"
-							value={data.asset.name}
-							required
-							disabled={!data.canEdit}
-						/>
+						<Input id="name" name="name" bind:value={name} required />
 					</div>
 					<div class="space-y-2">
 						<Label for="kind">Kind</Label>
 						<select
 							id="kind"
 							name="kind"
+							bind:value={kind}
 							class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
-							disabled={!data.canEdit}
 						>
 							{#each ASSET_KINDS as k (k)}
-								<option value={k} selected={data.asset.kind === k}>{k}</option>
+								<option value={k}>{k}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="space-y-2">
 						<Label for="value">Value</Label>
-						<Input
-							id="value"
-							name="value"
-							type="number"
-							step="0.01"
-							value={data.asset.value ?? ''}
-							disabled={!data.canEdit}
-						/>
+						<Input id="value" name="value" type="number" step="0.01" bind:value />
 					</div>
 					<div class="space-y-2">
 						<Label for="location">Location</Label>
-						<Input
-							id="location"
-							name="location"
-							value={data.asset.location ?? ''}
-							disabled={!data.canEdit}
-						/>
+						<Input id="location" name="location" bind:value={location} />
 					</div>
 				</div>
 				<div class="space-y-2">
 					<Label for="tags">Tags (comma-separated)</Label>
-					<Input
-						id="tags"
-						name="tags"
-						value={(data.asset.tags ?? []).join(', ')}
-						disabled={!data.canEdit}
-					/>
+					<Input id="tags" name="tags" bind:value={tagsStr} />
 				</div>
 				<div class="space-y-2">
 					<Label for="notes">Notes</Label>
-					<Textarea
-						id="notes"
-						name="notes"
-						rows={4}
-						value={data.asset.notes ?? ''}
-						disabled={!data.canEdit}
-					/>
+					<Textarea id="notes" name="notes" rows={4} bind:value={notes} />
 				</div>
 
 				<AttrsEditor defs={data.defs} bind:values errors={fieldErrors} />
@@ -123,11 +113,10 @@
 					<p class="text-sm text-emerald-600">Saved.</p>
 				{/if}
 			</Card.Content>
-			<Card.Footer class="gap-2">
-				<Button type="submit" disabled={submitting || !data.canEdit}>
+			<Card.Footer>
+				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Saving…' : 'Save changes'}
 				</Button>
-				<Button type="button" variant="ghost" href="/assets">Back</Button>
 			</Card.Footer>
 		</form>
 	</Card.Root>

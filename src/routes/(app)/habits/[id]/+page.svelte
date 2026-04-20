@@ -7,11 +7,26 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsEditor } from '$lib/custom-attrs';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data, form } = $props();
 
+	const CADENCES = [
+		{ value: 'daily', label: 'Daily' },
+		{ value: 'weekdays', label: 'Weekdays' },
+		{ value: 'weekly', label: 'Weekly' },
+		{ value: 'monthly', label: 'Monthly' }
+	];
+
+	// svelte-ignore state_referenced_locally
+	let name = $state(data.habit.name);
+	// svelte-ignore state_referenced_locally
+	let cadence = $state(data.habit.cadence);
+	// svelte-ignore state_referenced_locally
+	let description = $state(data.habit.description ?? '');
 	// svelte-ignore state_referenced_locally
 	let values = $state<Record<string, unknown>>({ ...(data.habit.custom as object) });
+
 	let submitting = $state(false);
 
 	const fieldErrors = $derived(
@@ -20,6 +35,11 @@
 </script>
 
 <section class="mx-auto max-w-2xl space-y-4">
+	<div class="flex items-center gap-2">
+		<BackButton href="/habits" />
+		<span class="text-xs tracking-widest text-muted-foreground uppercase">Habits</span>
+	</div>
+
 	<header class="flex items-center justify-between">
 		<div class="space-y-1">
 			<h1 class="text-2xl font-semibold tracking-tight">{data.habit.name}</h1>
@@ -58,21 +78,24 @@
 			<Card.Content class="space-y-4 pt-6">
 				<div class="space-y-2">
 					<Label for="name">Name</Label>
-					<Input id="name" name="name" value={data.habit.name} required disabled={!data.canEdit} />
+					<Input id="name" name="name" bind:value={name} required />
 				</div>
 				<div class="space-y-2">
 					<Label for="cadence">Cadence</Label>
-					<Input id="cadence" name="cadence" value={data.habit.cadence} disabled={!data.canEdit} />
+					<select
+						id="cadence"
+						name="cadence"
+						bind:value={cadence}
+						class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
+					>
+						{#each CADENCES as c (c.value)}
+							<option value={c.value}>{c.label}</option>
+						{/each}
+					</select>
 				</div>
 				<div class="space-y-2">
 					<Label for="description">Description</Label>
-					<Textarea
-						id="description"
-						name="description"
-						rows={3}
-						value={data.habit.description ?? ''}
-						disabled={!data.canEdit}
-					/>
+					<Textarea id="description" name="description" rows={3} bind:value={description} />
 				</div>
 
 				<AttrsEditor defs={data.defs} bind:values errors={fieldErrors} />
@@ -83,11 +106,10 @@
 					<p class="text-sm text-emerald-600">Saved.</p>
 				{/if}
 			</Card.Content>
-			<Card.Footer class="gap-2">
-				<Button type="submit" disabled={submitting || !data.canEdit}>
+			<Card.Footer>
+				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Saving…' : 'Save changes'}
 				</Button>
-				<Button type="button" variant="ghost" href="/habits">Back</Button>
 			</Card.Footer>
 		</form>
 	</Card.Root>

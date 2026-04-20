@@ -53,10 +53,10 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		if (!id) return fail(400, { error: 'Missing id.' });
-		const { error } = await locals.supabase
-			.from('tasks')
-			.update({ deleted_at: new Date().toISOString() })
-			.eq('id', id);
+		// Hard delete — soft-delete was tripping an RLS edge case (post-update
+		// SELECT RLS blocked `deleted_at is not null`, which PostgREST reads as
+		// a policy violation). Tasks don't need tombstones.
+		const { error } = await locals.supabase.from('tasks').delete().eq('id', id);
 		if (error) return fail(500, { error: error.message });
 		return { deleted: true };
 	}

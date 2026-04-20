@@ -16,6 +16,11 @@
 	let submitting = $state(false);
 	const today = new Date().toISOString().slice(0, 10);
 
+	let wentToBed = $state('');
+	let wokeUp = $state('');
+	let hoursSlept = $state<number | string>('');
+	let userTouchedHours = $state(false);
+
 	const fieldErrors = $derived(
 		(form && 'fieldErrors' in form ? (form.fieldErrors as Record<string, string>) : {}) ?? {}
 	);
@@ -27,13 +32,42 @@
 			month: 'short'
 		});
 	}
+
+	/** Auto-compute hours between two HH:MM strings, assuming bed→wake crosses
+	 *  at most one midnight. Returns a number rounded to 0.25. */
+	function diffHours(bed: string, wake: string): number | null {
+		if (!/^\d{2}:\d{2}$/.test(bed) || !/^\d{2}:\d{2}$/.test(wake)) return null;
+		const [bh, bm] = bed.split(':').map(Number);
+		const [wh, wm] = wake.split(':').map(Number);
+		let mins = wh * 60 + wm - (bh * 60 + bm);
+		if (mins <= 0) mins += 24 * 60; // crossed midnight
+		return Math.round((mins / 60) * 4) / 4;
+	}
+
+	// Recompute hours whenever either time changes, unless the user has typed
+	// into the hours field directly (respect their override).
+	$effect(() => {
+		if (userTouchedHours) return;
+		const v = diffHours(wentToBed, wokeUp);
+		hoursSlept = v ?? '';
+	});
+
+	function resetForm() {
+		wentToBed = '';
+		wokeUp = '';
+		hoursSlept = '';
+		userTouchedHours = false;
+		values = {};
+	}
 </script>
 
 <section class="space-y-6">
 	<header class="flex items-start justify-between gap-4">
 		<div class="space-y-1">
 			<h1 class="text-2xl font-semibold tracking-tight">Sleep</h1>
-			<p class="text-sm text-muted-foreground">One row per night. Quality, hours, notes.</p>
+			<p class="text-sm text-muted-foreground">
+				One row per night. Hours auto-calculate from bed/wake times.
+			</p>
 		</div>
 		<Button variant="outline" size="sm" href="/sleep/fields">
 			<Settings2 class="size-4" />
@@ -50,9 +84,9 @@
 			action="?/create"
 			use:enhance={() => {
 				submitting = true;
-				return async ({ update }) => {
+				return async ({ update, result }) => {
 					await update({ reset: true });
-					values = {};
+					if (result.type === 'success') resetForm();
 					submitting = false;
 				};
 			}}
@@ -64,15 +98,24 @@
 				</div>
 				<div class="space-y-2">
 					<Label for="went_to_bed">Went to bed</Label>
-					<Input id="went_to_bed" name="went_to_bed" type="time" />
+					<Input id="went_to_bed" name="went_to_bed" type="time" bind:value={wentToBed} />
 				</div>
 				<div class="space-y-2">
 					<Label for="woke_up">Woke up</Label>
-					<Input id="woke_up" name="woke_up" type="time" />
+					<Input id="woke_up" name="woke_up" type="time" bind:value={wokeUp} />
 				</div>
 				<div class="space-y-2">
 					<Label for="hours_slept">Hours slept</Label>
-					<Input id="hours_slept" name="hours_slept" type="number" step="0.25" min="0" max="24" />
+					<Input
+						id="hours_slept"
+						name="hours_slept"
+						type="number"
+						step="0.25"
+						min="0"
+						max="24"
+						bind:value={hoursSlept}
+						oninput={() => (userTouchedHours = true)}
+					/>
 				</div>
 				<div class="space-y-2">
 					<Label for="quality">Quality (1–10)</Label>

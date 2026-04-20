@@ -127,4 +127,14 @@
 	html {
 		@apply font-sans;
 	}
+
+	/* Hide native number-input spinner controls — ugly, hard to use on touch. */
+	input[type='number']::-webkit-inner-spin-button,
+	input[type='number']::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	input[type='number'] {
+		-moz-appearance: textfield;
+	}
 }

@@ -6,11 +6,23 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
 	import { AttrsEditor } from '$lib/custom-attrs';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data, form } = $props();
 
 	// svelte-ignore state_referenced_locally
+	let title = $state(data.task.title);
+	// svelte-ignore state_referenced_locally
+	let status = $state(data.task.status);
+	// svelte-ignore state_referenced_locally
+	let dueDate = $state(data.task.due_date ?? '');
+	// svelte-ignore state_referenced_locally
+	let priority = $state<number | string>(data.task.priority ?? '');
+	// svelte-ignore state_referenced_locally
+	let description = $state(data.task.description ?? '');
+	// svelte-ignore state_referenced_locally
 	let values = $state<Record<string, unknown>>({ ...(data.task.custom as object) });
+
 	let submitting = $state(false);
 
 	const fieldErrors = $derived(
@@ -19,6 +31,11 @@
 </script>
 
 <section class="mx-auto max-w-2xl space-y-4">
+	<div class="flex items-center gap-2">
+		<BackButton href="/tasks" />
+		<span class="text-xs tracking-widest text-muted-foreground uppercase">Tasks</span>
+	</div>
+
 	<header class="flex items-center justify-between">
 		<h1 class="text-2xl font-semibold tracking-tight">Edit task</h1>
 		{#if data.canEdit}
@@ -50,13 +67,7 @@
 			<Card.Content class="space-y-4 pt-6">
 				<div class="space-y-2">
 					<Label for="title">Title</Label>
-					<Input
-						id="title"
-						name="title"
-						value={data.task.title}
-						required
-						disabled={!data.canEdit}
-					/>
+					<Input id="title" name="title" bind:value={title} required />
 				</div>
 
 				<div class="grid gap-4 sm:grid-cols-3">
@@ -65,23 +76,17 @@
 						<select
 							id="status"
 							name="status"
+							bind:value={status}
 							class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
-							disabled={!data.canEdit}
 						>
 							{#each ['todo', 'doing', 'done', 'cancelled'] as s (s)}
-								<option value={s} selected={data.task.status === s}>{s}</option>
+								<option value={s}>{s}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="space-y-2">
 						<Label for="due_date">Due</Label>
-						<Input
-							id="due_date"
-							name="due_date"
-							type="date"
-							value={data.task.due_date ?? ''}
-							disabled={!data.canEdit}
-						/>
+						<Input id="due_date" name="due_date" type="date" bind:value={dueDate} />
 					</div>
 					<div class="space-y-2">
 						<Label for="priority">Priority (1–5)</Label>
@@ -91,21 +96,14 @@
 							type="number"
 							min={1}
 							max={5}
-							value={data.task.priority ?? ''}
-							disabled={!data.canEdit}
+							bind:value={priority}
 						/>
 					</div>
 				</div>
 
 				<div class="space-y-2">
 					<Label for="description">Description</Label>
-					<Textarea
-						id="description"
-						name="description"
-						rows={6}
-						value={data.task.description ?? ''}
-						disabled={!data.canEdit}
-					/>
+					<Textarea id="description" name="description" rows={6} bind:value={description} />
 				</div>
 
 				<AttrsEditor defs={data.defs} bind:values errors={fieldErrors} />
@@ -116,11 +114,10 @@
 					<p class="text-sm text-emerald-600">Saved.</p>
 				{/if}
 			</Card.Content>
-			<Card.Footer class="gap-2">
-				<Button type="submit" disabled={submitting || !data.canEdit}>
+			<Card.Footer>
+				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Saving…' : 'Save changes'}
 				</Button>
-				<Button type="button" variant="ghost" href="/tasks">Back</Button>
 			</Card.Footer>
 		</form>
 	</Card.Root>

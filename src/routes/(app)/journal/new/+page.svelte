@@ -6,6 +6,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
 	import { AttrsEditor } from '$lib/custom-attrs';
+	import BackButton from '$lib/components/BackButton.svelte';
 
 	let { data, form } = $props();
 
@@ -19,6 +20,11 @@
 </script>
 
 <section class="mx-auto max-w-2xl space-y-4">
+	<div class="flex items-center gap-2">
+		<BackButton href="/journal" />
+		<span class="text-xs tracking-widest text-muted-foreground uppercase">Journal</span>
+	</div>
+
 	<header class="space-y-1">
 		<h1 class="text-2xl font-semibold tracking-tight">New entry</h1>
 	</header>
@@ -62,11 +68,10 @@
 					<p class="text-sm text-destructive">{form.error}</p>
 				{/if}
 			</Card.Content>
-			<Card.Footer class="gap-2">
+			<Card.Footer>
 				<Button type="submit" disabled={submitting}>
 					{submitting ? 'Saving…' : 'Save'}
 				</Button>
-				<Button type="button" variant="ghost" href="/journal">Cancel</Button>
 			</Card.Footer>
 		</form>
 	</Card.Root>

@@ -23,8 +23,10 @@ export const actions: Actions = {
 	update: async ({ request, params, locals }) => {
 		const form = await request.formData();
 		const entry_date = String(form.get('entry_date') ?? '').trim();
-		const title = String(form.get('title') ?? '').trim() || null;
-		const body = String(form.get('body') ?? '').trim() || null;
+		const titleRaw = String(form.get('title') ?? '');
+		const bodyRaw = String(form.get('body') ?? '');
+		const title = titleRaw.trim() === '' ? null : titleRaw;
+		const body = bodyRaw.trim() === '' ? null : bodyRaw;
 		const moodRaw = String(form.get('mood') ?? '').trim();
 		const mood = moodRaw ? Number(moodRaw) : null;
 
