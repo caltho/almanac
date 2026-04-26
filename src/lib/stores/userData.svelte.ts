@@ -132,6 +132,16 @@ export type ShoppingItem = Pick<
 	| 'updated_at'
 >;
 
+export type Activity = Pick<
+	T['activities']['Row'],
+	'id' | 'owner_id' | 'name' | 'color' | 'order_index' | 'updated_at'
+>;
+
+export type ActivityLog = Pick<
+	T['activity_logs']['Row'],
+	'id' | 'activity_id' | 'log_date'
+>;
+
 export type HotData = {
 	profile: Profile | null;
 	shares: Share[];
@@ -149,6 +159,8 @@ export type HotData = {
 	projectItems: ProjectItem[];
 	datasets: Dataset[];
 	shoppingItems: ShoppingItem[];
+	activities: Activity[];
+	activityLogs: ActivityLog[];
 	hydratedAt: number;
 };
 
@@ -169,6 +181,8 @@ export class UserData {
 	projectItems = $state<ProjectItem[]>([]);
 	datasets = $state<Dataset[]>([]);
 	shoppingItems = $state<ShoppingItem[]>([]);
+	activities = $state<Activity[]>([]);
+	activityLogs = $state<ActivityLog[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -188,7 +202,45 @@ export class UserData {
 		this.projectItems = seed.projectItems;
 		this.datasets = seed.datasets;
 		this.shoppingItems = seed.shoppingItems;
+		this.activities = seed.activities;
+		this.activityLogs = seed.activityLogs;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Activities ----------------------------------------------------------
+	addActivity(a: Activity) {
+		this.activities = [...this.activities, a];
+	}
+	removeActivity(id: string) {
+		this.activities = this.activities.filter((a) => a.id !== id);
+		this.activityLogs = this.activityLogs.filter((l) => l.activity_id !== id);
+	}
+	activityLoggedOn(activity_id: string, log_date: string): ActivityLog | undefined {
+		return this.activityLogs.find(
+			(l) => l.activity_id === activity_id && l.log_date === log_date
+		);
+	}
+	toggleActivityLog(activity_id: string, log_date: string, on: boolean, tempId?: string) {
+		const existing = this.activityLoggedOn(activity_id, log_date);
+		if (on) {
+			if (!existing) {
+				this.activityLogs = [
+					...this.activityLogs,
+					{
+						id: tempId ?? `tmp-${Math.random().toString(36).slice(2)}`,
+						activity_id,
+						log_date
+					}
+				];
+			}
+		} else if (existing) {
+			this.activityLogs = this.activityLogs.filter((l) => l.id !== existing.id);
+		}
+	}
+	replaceActivityLog(tempOrPrevId: string, log: ActivityLog) {
+		const i = this.activityLogs.findIndex((l) => l.id === tempOrPrevId);
+		if (i >= 0) this.activityLogs[i] = log;
+		else this.activityLogs = [...this.activityLogs, log];
 	}
 
 	// --- Shopping ------------------------------------------------------------

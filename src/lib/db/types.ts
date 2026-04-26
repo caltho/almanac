@@ -39,6 +39,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          order_index: number
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      activity_logs: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          log_date: string
+          notes: string | null
+          owner_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          log_date: string
+          notes?: string | null
+          owner_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           acquired_on: string | null
@@ -947,7 +1015,7 @@ export type Database = {
         | "rating"
       import_batch_status: "staged" | "confirmed" | "cancelled"
       share_perm: "read" | "comment" | "write"
-      shopping_period: "weekly" | "monthly" | "quarterly" | "yearly"
+      shopping_period: "weekly" | "monthly" | "quarterly" | "yearly" | "none"
       shopping_status: "buy" | "stocked"
       task_status: "todo" | "doing" | "done" | "cancelled"
     }
@@ -1103,7 +1171,7 @@ export const Constants = {
       ],
       import_batch_status: ["staged", "confirmed", "cancelled"],
       share_perm: ["read", "comment", "write"],
-      shopping_period: ["weekly", "monthly", "quarterly", "yearly"],
+      shopping_period: ["weekly", "monthly", "quarterly", "yearly", "none"],
       shopping_status: ["buy", "stocked"],
       task_status: ["todo", "doing", "done", "cancelled"],
     },

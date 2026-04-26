@@ -11,6 +11,7 @@ import Wallet from '@lucide/svelte/icons/wallet';
 import Package from '@lucide/svelte/icons/package';
 import FolderKanban from '@lucide/svelte/icons/folder-kanban';
 import Database from '@lucide/svelte/icons/database';
+import Activity from '@lucide/svelte/icons/activity';
 import Sparkles from '@lucide/svelte/icons/sparkles';
 
 export type NavItem = {
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
 	{ href: '/sleep', label: 'Sleep', icon: Moon, milestone: 3 },
 	{ href: '/tasks', label: 'Tasks', icon: CheckCircle2, milestone: 3 },
 	{ href: '/habits', label: 'Habits', icon: Repeat, milestone: 3 },
+	{ href: '/activities', label: 'Activities', icon: Activity, milestone: 3 },
 	{ href: '/finance', label: 'Finance', icon: Wallet, milestone: 4 },
 	{ href: '/assets', label: 'Stuff', icon: Package, milestone: 5 },
 	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 },

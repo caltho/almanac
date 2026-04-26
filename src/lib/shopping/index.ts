@@ -3,30 +3,44 @@ import type { Database } from '$lib/db/types';
 export type ShoppingStatus = Database['public']['Enums']['shopping_status'];
 export type ShoppingPeriod = Database['public']['Enums']['shopping_period'];
 
-export const SHOPPING_PERIODS: ShoppingPeriod[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
+export const SHOPPING_PERIODS: ShoppingPeriod[] = [
+	'none',
+	'weekly',
+	'monthly',
+	'quarterly',
+	'yearly'
+];
 
 export const PERIOD_LABELS: Record<ShoppingPeriod, string> = {
+	none: 'No restock',
 	weekly: 'Weekly',
 	monthly: 'Monthly',
 	quarterly: 'Quarterly',
 	yearly: 'Yearly'
 };
 
-const PERIOD_DAYS: Record<ShoppingPeriod, number> = {
+// 'none' = never auto-flips to Reminder; nextRestockAt returns null below.
+const PERIOD_DAYS: Record<ShoppingPeriod, number | null> = {
+	none: null,
 	weekly: 7,
 	monthly: 30,
 	quarterly: 91,
 	yearly: 365
 };
 
-/** Date the item is next "due" for a restock. Returns null if never purchased. */
+/**
+ * Date the item is next "due" for a restock. Returns null if never purchased
+ * or if the item is on the 'none' (no auto-restock) cadence.
+ */
 export function nextRestockAt(
 	last: string | null | undefined,
 	period: ShoppingPeriod
 ): Date | null {
 	if (!last) return null;
+	const days = PERIOD_DAYS[period];
+	if (days === null) return null;
 	const d = new Date(last);
-	d.setDate(d.getDate() + PERIOD_DAYS[period]);
+	d.setDate(d.getDate() + days);
 	return d;
 }
 

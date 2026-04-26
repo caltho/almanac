@@ -17,6 +17,7 @@ import type { Database } from '$lib/db/types';
 import type { HotData } from './userData.svelte';
 
 const HABIT_CHECK_WINDOW_DAYS = 90;
+const ACTIVITY_LOG_WINDOW_DAYS = 90;
 const RECENT_TX_WINDOW_DAYS = 90;
 const JOURNAL_LIMIT = 200;
 const SLEEP_LIMIT = 200;
@@ -33,6 +34,7 @@ export async function loadHotData(
 	ownerId: string
 ): Promise<HotData> {
 	const checkSince = isoDaysAgo(HABIT_CHECK_WINDOW_DAYS);
+	const activityLogSince = isoDaysAgo(ACTIVITY_LOG_WINDOW_DAYS);
 	const txSince = isoDaysAgo(RECENT_TX_WINDOW_DAYS);
 
 	const [
@@ -51,7 +53,9 @@ export async function loadHotData(
 		{ data: projects },
 		{ data: projectItems },
 		{ data: datasets },
-		{ data: shoppingItems }
+		{ data: shoppingItems },
+		{ data: activities },
+		{ data: activityLogs }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -137,7 +141,17 @@ export async function loadHotData(
 				'id, owner_id, name, status, restock_period, last_purchased_at, notes, custom, updated_at'
 			)
 			.is('archived_at', null)
-			.order('name', { ascending: true })
+			.order('name', { ascending: true }),
+		supabase
+			.from('activities')
+			.select('id, owner_id, name, color, order_index, updated_at')
+			.is('archived_at', null)
+			.order('order_index', { ascending: true })
+			.order('name', { ascending: true }),
+		supabase
+			.from('activity_logs')
+			.select('id, activity_id, log_date')
+			.gte('log_date', activityLogSince)
 	]);
 
 	return {
@@ -157,6 +171,8 @@ export async function loadHotData(
 		projectItems: projectItems ?? [],
 		datasets: datasets ?? [],
 		shoppingItems: shoppingItems ?? [],
+		activities: activities ?? [],
+		activityLogs: activityLogs ?? [],
 		hydratedAt: Date.now()
 	};
 }
