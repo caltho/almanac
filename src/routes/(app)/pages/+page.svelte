@@ -20,7 +20,7 @@
 <header class="flex items-start justify-between">
 	<div class="space-y-1">
 		<h1 class="text-2xl font-semibold tracking-tight">Pages</h1>
-		<p class="text-sm text-muted-foreground">Nestable docs made from typed blocks.</p>
+		<p class="text-sm text-muted-foreground">Nestable docs with basic rich-text bodies.</p>
 	</div>
 </header>
 

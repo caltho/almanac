@@ -1,30 +1,96 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { BLOCK_LABELS, BLOCK_TYPES, BlockComponent, coerceBlockContent } from '$lib/blocks';
-	import type { BlockType } from '$lib/blocks';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import ArrowUp from '@lucide/svelte/icons/arrow-up';
-	import ArrowDown from '@lucide/svelte/icons/arrow-down';
-	import Plus from '@lucide/svelte/icons/plus';
+	import Bold from '@lucide/svelte/icons/bold';
+	import Italic from '@lucide/svelte/icons/italic';
+	import Underline from '@lucide/svelte/icons/underline';
+	import Heading2 from '@lucide/svelte/icons/heading-2';
+	import Heading3 from '@lucide/svelte/icons/heading-3';
+	import List from '@lucide/svelte/icons/list';
+	import ListOrdered from '@lucide/svelte/icons/list-ordered';
+	import LinkIcon from '@lucide/svelte/icons/link';
+	import Quote from '@lucide/svelte/icons/quote';
+	import Eraser from '@lucide/svelte/icons/eraser';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let editingMeta = $state(false);
-	let addingType = $state<BlockType>('paragraph');
-
-	// Keep local drafts of block contents so the user can type freely; persist
-	// with a form submit on blur.
+	let editor = $state<HTMLDivElement | null>(null);
 	// svelte-ignore state_referenced_locally
-	let drafts = $state(
-		Object.fromEntries(
-			data.blocks.map((b) => [b.id, coerceBlockContent(b.type, b.content)])
-		) as Record<string, unknown>
-	);
+	let bodyHtml = $state(data.page.body_html);
+	let dirty = $state(false);
+	let saving = $state(false);
+
+	// Re-seed the editor whenever the loaded page changes (e.g. nav between
+	// pages, or after a rename round-trip). Don't blow away local edits.
+	$effect(() => {
+		if (!editor) return;
+		if (dirty) return;
+		const incoming = data.page.body_html ?? '';
+		if (editor.innerHTML !== incoming) {
+			editor.innerHTML = incoming;
+			bodyHtml = incoming;
+		}
+	});
+
+	function exec(command: string, value?: string) {
+		// execCommand is officially deprecated but every browser still ships it
+		// and it remains the simplest path to "basic rich text" without dragging
+		// in a 50 KB editor library. Swap for a real editor (Tiptap etc.) if we
+		// outgrow this.
+		// eslint-disable-next-line @typescript-eslint/no-deprecated
+		document.execCommand(command, false, value);
+		editor?.focus();
+		onInput();
+	}
+
+	function onInput() {
+		if (!editor) return;
+		bodyHtml = editor.innerHTML;
+		dirty = true;
+	}
+
+	function promptLink() {
+		const url = window.prompt('Link URL');
+		if (!url) return;
+		exec('createLink', url);
+	}
+
+	function clearFormatting() {
+		exec('removeFormat');
+		exec('formatBlock', 'p');
+	}
+
+	// Cmd/Ctrl+S → save without leaving the page.
+	function onKeydown(e: KeyboardEvent) {
+		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+			e.preventDefault();
+			(document.getElementById('save-body-form') as HTMLFormElement | null)?.requestSubmit();
+		}
+	}
+
+	type ToolbarBtn = {
+		label: string;
+		icon: typeof Bold;
+		run: () => void;
+	};
+	const tools: ToolbarBtn[] = [
+		{ label: 'Bold (⌘B)', icon: Bold, run: () => exec('bold') },
+		{ label: 'Italic (⌘I)', icon: Italic, run: () => exec('italic') },
+		{ label: 'Underline (⌘U)', icon: Underline, run: () => exec('underline') },
+		{ label: 'Heading 2', icon: Heading2, run: () => exec('formatBlock', 'h2') },
+		{ label: 'Heading 3', icon: Heading3, run: () => exec('formatBlock', 'h3') },
+		{ label: 'Bulleted list', icon: List, run: () => exec('insertUnorderedList') },
+		{ label: 'Numbered list', icon: ListOrdered, run: () => exec('insertOrderedList') },
+		{ label: 'Quote', icon: Quote, run: () => exec('formatBlock', 'blockquote') },
+		{ label: 'Link', icon: LinkIcon, run: promptLink },
+		{ label: 'Clear formatting', icon: Eraser, run: clearFormatting }
+	];
 </script>
+
+<svelte:document onkeydown={onKeydown} />
 
 <header class="flex items-start justify-between">
 	<div class="flex min-w-0 items-center gap-3">
@@ -45,7 +111,7 @@
 				method="POST"
 				action="?/deletePage"
 				use:enhance={({ cancel }) => {
-					if (!confirm('Archive this page? Blocks come with it.')) cancel();
+					if (!confirm('Archive this page?')) cancel();
 					return async ({ update }) => await update();
 				}}
 			>
@@ -91,79 +157,65 @@
 	</form>
 {/if}
 
-<article class="space-y-3">
-	{#if data.blocks.length === 0}
-		<p class="text-sm text-muted-foreground">Empty page. Add a block below.</p>
-	{/if}
-	{#each data.blocks as b (b.id)}
-		<div class="group relative rounded-md border p-3">
-			<form method="POST" action="?/updateBlock" use:enhance id={`block-save-${b.id}`}>
-				<input type="hidden" name="id" value={b.id} />
-				<input type="hidden" name="content" value={JSON.stringify(drafts[b.id] ?? b.content)} />
-				<BlockComponent
-					block={b}
-					edit={data.canEdit}
-					onchange={(c) => (drafts = { ...drafts, [b.id]: c })}
-				/>
-			</form>
+<form
+	method="POST"
+	action="?/saveBody"
+	id="save-body-form"
+	use:enhance={() => {
+		saving = true;
+		return async ({ update }) => {
+			await update({ reset: false });
+			dirty = false;
+			saving = false;
+		};
+	}}
+	class="space-y-2"
+>
+	<input type="hidden" name="body_html" value={bodyHtml} />
 
-			{#if data.canEdit}
-				<div
-					class="absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+	{#if data.canEdit}
+		<div
+			class="sticky top-2 z-10 flex flex-wrap items-center gap-1 rounded-md border bg-background/95 p-1 shadow-sm backdrop-blur"
+		>
+			{#each tools as t (t.label)}
+				{@const Icon = t.icon}
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					onclick={t.run}
+					title={t.label}
+					aria-label={t.label}
 				>
-					<Button type="submit" form={`block-save-${b.id}`} variant="outline" size="xs">
-						Save
-					</Button>
-					<form method="POST" action="?/moveBlock" use:enhance>
-						<input type="hidden" name="id" value={b.id} />
-						<input type="hidden" name="direction" value="up" />
-						<Button type="submit" variant="ghost" size="icon-xs" aria-label="Move up">
-							<ArrowUp class="size-3" />
-						</Button>
-					</form>
-					<form method="POST" action="?/moveBlock" use:enhance>
-						<input type="hidden" name="id" value={b.id} />
-						<input type="hidden" name="direction" value="down" />
-						<Button type="submit" variant="ghost" size="icon-xs" aria-label="Move down">
-							<ArrowDown class="size-3" />
-						</Button>
-					</form>
-					<form method="POST" action="?/deleteBlock" use:enhance>
-						<input type="hidden" name="id" value={b.id} />
-						<Button type="submit" variant="ghost" size="icon-xs" aria-label="Delete">
-							<Trash2 class="size-3" />
-						</Button>
-					</form>
-				</div>
-			{/if}
-		</div>
-	{/each}
-</article>
-
-{#if data.canEdit}
-	<Card.Root>
-		<form method="POST" action="?/addBlock" use:enhance>
-			<Card.Content class="grid gap-3 pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
-				<div class="space-y-1">
-					<Label>Add block</Label>
-					<select
-						name="type"
-						bind:value={addingType}
-						class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
-					>
-						{#each BLOCK_TYPES as t (t)}
-							<option value={t}>{BLOCK_LABELS[t]}</option>
-						{/each}
-					</select>
-				</div>
-				<Button type="submit">
-					<Plus class="size-4" />
-					<span>Add</span>
+					<Icon class="size-4" />
 				</Button>
-			</Card.Content>
-		</form>
-	</Card.Root>
-{/if}
+			{/each}
+			<div class="ml-auto flex items-center gap-2 pr-1">
+				{#if dirty}
+					<span class="text-xs text-muted-foreground">Unsaved</span>
+				{/if}
+				<Button type="submit" size="sm" disabled={!dirty || saving}>
+					{saving ? 'Saving…' : 'Save'}
+				</Button>
+			</div>
+		</div>
+	{/if}
+
+	<div
+		bind:this={editor}
+		contenteditable={data.canEdit}
+		spellcheck="true"
+		oninput={onInput}
+		role="textbox"
+		aria-multiline="true"
+		aria-label="Page body"
+		class="prose prose-sm max-w-none rounded-md border p-4 focus:outline-none dark:prose-invert min-h-[24rem] [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_h2]:mt-4 [&_h3]:mt-3"
+	></div>
+
+	{#if form?.error}
+		<p class="text-sm text-destructive">{form.error}</p>
+	{/if}
+</form>
 
 {#if data.children.length > 0}
 	<section class="space-y-2">

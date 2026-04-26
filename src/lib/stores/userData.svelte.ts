@@ -12,7 +12,7 @@
 //      `toggleHabitCheck`, …) for instant optimistic UI.
 //
 // Heavy / unbounded data lives elsewhere: finance routes still query their
-// own month windows (transactions can grow large), page blocks load with the
+// own month windows (transactions can grow large), page bodies load with the
 // page detail, etc. See `src/lib/stores/server.ts` for the loaded windows.
 
 import { getContext, setContext } from 'svelte';

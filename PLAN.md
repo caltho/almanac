@@ -82,12 +82,11 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 - `net_worth_snapshots` + charts
 - `projects` + `project_items` with nesting
 
-### M6 — Pages (Notion-lite)
+### M6 — Pages
 
-- `pages` + `blocks` schema
-- Block registry in `src/lib/blocks/`
-- Core block types: paragraph, heading, list, checklist, data-point
-- Nested pages
+- `pages(id, owner_id, parent_id, title, icon, body_html, archived_at)` — nestable
+- Single rich-text body per page (`body_html`) edited via contenteditable + execCommand toolbar; sanitized server-side in `src/lib/server/sanitize-html.ts`
+- (Earlier blocks-table model was scrapped — too fiddly. The table still exists in the DB but is unused; can be dropped in a later cleanup migration.)
 
 ### M7 — AI assistant
 
@@ -106,6 +105,7 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 
 - Offline edits + sync (`src/lib/sync/CLAUDE.md`)
 - Spreadsheet import (`src/lib/finance/csv-import/CLAUDE.md` notes the extension hooks)
-- Rich-text Notion editor
+- Real rich-text editor (Tiptap / ProseMirror) — current pages use contenteditable + execCommand
+- Block-style page model (paragraph/heading/list/checklist/data-point) — parked; the `blocks` table still exists in the DB unused
 - Multi-currency
 - Native mobile (staying PWA)

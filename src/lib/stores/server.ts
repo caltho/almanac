@@ -10,7 +10,7 @@
 //   3. Add a reactive `$state` field in `UserData` and assign it in `hydrate`
 //
 // Don't widen this loader for cold/heavy data — keep finance history, page
-// blocks, asset photos, etc. on their per-route loads.
+// bodies (HTML can grow), asset photos, etc. on their per-route loads.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/db/types';

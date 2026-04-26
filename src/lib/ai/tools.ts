@@ -93,7 +93,7 @@ export function createTools(supabase: TypedClient, userId: string) {
 		betaZodTool({
 			name: 'list_pages',
 			description:
-				'List all (non-archived) pages with id + title. Used to find a page_id to append blocks to.',
+				'List all (non-archived) pages with id + title. Used to find a page_id to append content to.',
 			inputSchema: z.object({}),
 			run: async () => {
 				const { data, error } = await supabase
@@ -358,38 +358,30 @@ export function createTools(supabase: TypedClient, userId: string) {
 		}),
 
 		betaZodTool({
-			name: 'add_page_block',
+			name: 'append_to_page',
 			description:
-				'Append a block to an existing page. For type="paragraph", content = { text }. For "heading", { text, level } (1|2|3). For "list", { items: string[], ordered: boolean }. For "checklist", { items: [{text, done}] }. For "data-point", { label, value, unit?, logged_at? }.',
+				'Append HTML to an existing page body. Pass plain HTML — basic tags only (p, h2, h3, ul/ol/li, strong/em/u, a). Content is sanitized server-side. Use list_pages first to find the page_id.',
 			inputSchema: z.object({
 				page_id: z.string().uuid(),
-				type: z.enum(['paragraph', 'heading', 'list', 'checklist', 'data-point']),
-				content: z.record(z.string(), z.unknown())
+				html: z.string().min(1)
 			}),
-			run: async ({ page_id, type, content }) => {
-				const { data: last } = await supabase
-					.from('blocks')
-					.select('order_index')
-					.eq('page_id', page_id)
-					.is('parent_block_id', null)
-					.order('order_index', { ascending: false })
-					.limit(1)
+			run: async ({ page_id, html }) => {
+				const { sanitizeHtml } = await import('$lib/server/sanitize-html');
+				const { data: existing, error: readErr } = await supabase
+					.from('pages')
+					.select('body_html')
+					.eq('id', page_id)
 					.maybeSingle();
+				if (readErr) return `error: ${readErr.message}`;
+				if (!existing) return `error: page ${page_id} not found`;
 
-				const { data, error } = await supabase
-					.from('blocks')
-					.insert({
-						owner_id: userId,
-						page_id,
-						type,
-						content: content as never,
-						order_index: (last?.order_index ?? -1) + 1
-					})
-					.select('id')
-					.single();
-
-				if (error) return `error: ${error.message}`;
-				return `added block ${data.id}`;
+				const next = (existing.body_html ?? '') + sanitizeHtml(html);
+				const { error: writeErr } = await supabase
+					.from('pages')
+					.update({ body_html: next })
+					.eq('id', page_id);
+				if (writeErr) return `error: ${writeErr.message}`;
+				return `appended to page ${page_id}`;
 			}
 		})
 	];

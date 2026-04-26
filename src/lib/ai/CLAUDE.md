@@ -17,7 +17,7 @@ Anthropic tool-use loop for the in-app assistant (M7).
 
 ## Tools (M7)
 
-Write: `create_journal_entry`, `log_sleep`, `add_task`, `toggle_habit_check`, `add_page_block`, `create_transaction`
+Write: `create_journal_entry`, `log_sleep`, `add_task`, `toggle_habit_check`, `append_to_page`, `create_transaction`
 Read: `query_journal`, `query_tasks`, `query_finance_summary`, `find_pages`
 Meta: `list_custom_attrs(table)`, `propose_custom_attr(table, key, type, label)` — user confirms before it's created
 

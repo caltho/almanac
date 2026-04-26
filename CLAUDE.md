@@ -36,7 +36,7 @@ src/lib/db/          # typed Supabase clients (browser + server)
 src/lib/auth/        # session helpers
 src/lib/shares/      # granular cross-user sharing primitives
 src/lib/custom-attrs/# user-definable attribute system (powers "customizable from frontend")
-src/lib/blocks/      # Notion-lite block registry (pages feature)
+src/lib/server/      # server-only helpers (HTML sanitizer, etc.)
 src/lib/ai/          # Anthropic client, tools, chat loop
 src/lib/finance/     # CSV import, rule engine, pg_trgm categoriser
 src/lib/stores/      # client-side userData store hydrated from (app)/+layout.server.ts
