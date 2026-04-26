@@ -119,6 +119,19 @@ export type Dataset = Pick<
 	'id' | 'owner_id' | 'name' | 'columns' | 'updated_at'
 >;
 
+export type ShoppingItem = Pick<
+	T['shopping_items']['Row'],
+	| 'id'
+	| 'owner_id'
+	| 'name'
+	| 'status'
+	| 'restock_period'
+	| 'last_purchased_at'
+	| 'notes'
+	| 'custom'
+	| 'updated_at'
+>;
+
 export type HotData = {
 	profile: Profile | null;
 	shares: Share[];
@@ -135,6 +148,7 @@ export type HotData = {
 	projects: Project[];
 	projectItems: ProjectItem[];
 	datasets: Dataset[];
+	shoppingItems: ShoppingItem[];
 	hydratedAt: number;
 };
 
@@ -154,6 +168,7 @@ export class UserData {
 	projects = $state<Project[]>([]);
 	projectItems = $state<ProjectItem[]>([]);
 	datasets = $state<Dataset[]>([]);
+	shoppingItems = $state<ShoppingItem[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -172,7 +187,20 @@ export class UserData {
 		this.projects = seed.projects;
 		this.projectItems = seed.projectItems;
 		this.datasets = seed.datasets;
+		this.shoppingItems = seed.shoppingItems;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Shopping ------------------------------------------------------------
+	addShoppingItem(item: ShoppingItem) {
+		this.shoppingItems = [item, ...this.shoppingItems];
+	}
+	updateShoppingItem(id: string, patch: Partial<ShoppingItem>) {
+		const i = this.shoppingItems.findIndex((x) => x.id === id);
+		if (i >= 0) this.shoppingItems[i] = { ...this.shoppingItems[i], ...patch };
+	}
+	removeShoppingItem(id: string) {
+		this.shoppingItems = this.shoppingItems.filter((x) => x.id !== id);
 	}
 
 	defsFor(table: string): CustomAttrDef[] {

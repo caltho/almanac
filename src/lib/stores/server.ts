@@ -50,7 +50,8 @@ export async function loadHotData(
 		{ data: assets },
 		{ data: projects },
 		{ data: projectItems },
-		{ data: datasets }
+		{ data: datasets },
+		{ data: shoppingItems }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -129,6 +130,13 @@ export async function loadHotData(
 		supabase
 			.from('datasets')
 			.select('id, owner_id, name, columns, updated_at')
+			.order('name', { ascending: true }),
+		supabase
+			.from('shopping_items')
+			.select(
+				'id, owner_id, name, status, restock_period, last_purchased_at, notes, custom, updated_at'
+			)
+			.is('archived_at', null)
 			.order('name', { ascending: true })
 	]);
 
@@ -148,6 +156,7 @@ export async function loadHotData(
 		projects: projects ?? [],
 		projectItems: projectItems ?? [],
 		datasets: datasets ?? [],
+		shoppingItems: shoppingItems ?? [],
 		hydratedAt: Date.now()
 	};
 }

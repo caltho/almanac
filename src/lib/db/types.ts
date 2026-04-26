@@ -701,6 +701,48 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_items: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          custom: Json
+          id: string
+          last_purchased_at: string | null
+          name: string
+          notes: string | null
+          owner_id: string
+          restock_period: Database["public"]["Enums"]["shopping_period"]
+          status: Database["public"]["Enums"]["shopping_status"]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          custom?: Json
+          id?: string
+          last_purchased_at?: string | null
+          name: string
+          notes?: string | null
+          owner_id: string
+          restock_period?: Database["public"]["Enums"]["shopping_period"]
+          status?: Database["public"]["Enums"]["shopping_status"]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          custom?: Json
+          id?: string
+          last_purchased_at?: string | null
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          restock_period?: Database["public"]["Enums"]["shopping_period"]
+          status?: Database["public"]["Enums"]["shopping_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sleep_logs: {
         Row: {
           created_at: string
@@ -905,6 +947,8 @@ export type Database = {
         | "rating"
       import_batch_status: "staged" | "confirmed" | "cancelled"
       share_perm: "read" | "comment" | "write"
+      shopping_period: "weekly" | "monthly" | "quarterly" | "yearly"
+      shopping_status: "buy" | "stocked"
       task_status: "todo" | "doing" | "done" | "cancelled"
     }
     CompositeTypes: {
@@ -1059,6 +1103,8 @@ export const Constants = {
       ],
       import_batch_status: ["staged", "confirmed", "cancelled"],
       share_perm: ["read", "comment", "write"],
+      shopping_period: ["weekly", "monthly", "quarterly", "yearly"],
+      shopping_status: ["buy", "stocked"],
       task_status: ["todo", "doing", "done", "cancelled"],
     },
   },
