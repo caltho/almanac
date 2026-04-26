@@ -3,7 +3,7 @@
 	let { children } = $props();
 
 	const tabs = [
-		{ href: '/assets', label: 'Inventory' },
+		{ href: '/assets', label: 'Stuff' },
 		{ href: '/assets/net-worth', label: 'Net worth' }
 	];
 

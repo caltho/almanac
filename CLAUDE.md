@@ -36,13 +36,13 @@ src/lib/db/          # typed Supabase clients (browser + server)
 src/lib/auth/        # session helpers
 src/lib/shares/      # granular cross-user sharing primitives
 src/lib/custom-attrs/# user-definable attribute system (powers "customizable from frontend")
-src/lib/server/      # server-only helpers (HTML sanitizer, etc.)
+src/lib/datasets/    # user-defined small tables (name + up to 7 typed columns)
 src/lib/ai/          # Anthropic client, tools, chat loop
 src/lib/finance/     # CSV import, rule engine, pg_trgm categoriser
 src/lib/stores/      # client-side userData store hydrated from (app)/+layout.server.ts
 src/lib/sync/        # STUB — deferred offline-sync extension points
 src/routes/(auth)/   # auth screens
-src/routes/(app)/    # authenticated app routes (journal, sleep, tasks, finance, assets, projects, pages, settings)
+src/routes/(app)/    # authenticated app routes (journal, sleep, tasks, finance, assets, projects, datasets, settings)
 src/routes/api/ai/   # AI chat endpoint (tool-use loop)
 ```
 

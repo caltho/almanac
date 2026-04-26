@@ -12,8 +12,8 @@ Centralized client-side store for the authenticated app shell. Lets pages render
 
 The store loads only what the shell needs to feel instant. Bounded windows on unbounded tables.
 
-- **Hot (in store):** profile, shares, all custom-attr defs (across every table), journal (200 most-recent), sleep (200 most-recent), tasks (all open + recent done), habits + habit_checks (last 90d), categories, budgets, recent transactions (last 90d), assets, projects + project_items, pages list (id/title/icon/parent only — no body_html).
-- **Cold (per-route, on demand):** finance history beyond 90d, page bodies (`body_html`), asset photos, full journal/task/sleep detail rows beyond what's in the list select, AI chat archive, import-batch staging.
+- **Hot (in store):** profile, shares, all custom-attr defs (across every table), journal (200 most-recent), sleep (200 most-recent), tasks (all open + recent done), habits + habit_checks (last 90d), categories, budgets, recent transactions (last 90d), assets, projects + project_items, datasets metadata (id/name/columns — no row data).
+- **Cold (per-route, on demand):** finance history beyond 90d, dataset rows, asset photos, full journal/task/sleep detail rows beyond what's in the list select, AI chat archive, import-batch staging.
 
 ## Rules
 

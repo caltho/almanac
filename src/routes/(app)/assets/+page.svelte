@@ -78,7 +78,7 @@
 
 <header class="flex items-start justify-between">
 	<div class="space-y-1">
-		<h2 class="text-xl font-semibold tracking-tight">Assets</h2>
+		<h2 class="text-xl font-semibold tracking-tight">Stuff</h2>
 		<p class="text-sm text-muted-foreground">
 			Everything you own. Tag-and-locate for household inventory.
 		</p>

@@ -93,57 +93,6 @@ export type Database = {
         }
         Relationships: []
       }
-      blocks: {
-        Row: {
-          content: Json
-          created_at: string
-          id: string
-          order_index: number
-          owner_id: string
-          page_id: string
-          parent_block_id: string | null
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          content?: Json
-          created_at?: string
-          id?: string
-          order_index?: number
-          owner_id: string
-          page_id: string
-          parent_block_id?: string | null
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          content?: Json
-          created_at?: string
-          id?: string
-          order_index?: number
-          owner_id?: string
-          page_id?: string
-          parent_block_id?: string | null
-          type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "blocks_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blocks_parent_block_id_fkey"
-            columns: ["parent_block_id"]
-            isOneToOne: false
-            referencedRelation: "blocks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       budgets: {
         Row: {
           amount: number
@@ -264,6 +213,74 @@ export type Database = {
           table_name?: string
           type?: Database["public"]["Enums"]["custom_attr_type"]
           ui_hints?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dataset_rows: {
+        Row: {
+          created_at: string
+          data: Json
+          dataset_id: string
+          id: string
+          name: string
+          order_index: number
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          dataset_id: string
+          id?: string
+          name?: string
+          order_index?: number
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          dataset_id?: string
+          id?: string
+          name?: string
+          order_index?: number
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dataset_rows_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datasets: {
+        Row: {
+          columns: Json
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          columns?: Json
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          columns?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -519,53 +536,6 @@ export type Database = {
           total_value?: number
         }
         Relationships: []
-      }
-      pages: {
-        Row: {
-          archived_at: string | null
-          body_html: string
-          created_at: string
-          icon: string | null
-          id: string
-          order_index: number
-          owner_id: string
-          parent_id: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          archived_at?: string | null
-          body_html?: string
-          created_at?: string
-          icon?: string | null
-          id?: string
-          order_index?: number
-          owner_id: string
-          parent_id?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Update: {
-          archived_at?: string | null
-          body_html?: string
-          created_at?: string
-          icon?: string | null
-          id?: string
-          order_index?: number
-          owner_id?: string
-          parent_id?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pages_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {

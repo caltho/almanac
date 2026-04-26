@@ -37,7 +37,7 @@
 <section class="mx-auto max-w-2xl space-y-4">
 	<div class="flex items-center gap-2">
 		<BackButton href="/assets" />
-		<span class="text-xs tracking-widest text-muted-foreground uppercase">Assets</span>
+		<span class="text-xs tracking-widest text-muted-foreground uppercase">Stuff</span>
 	</div>
 
 	<header class="flex items-center justify-between">

@@ -82,11 +82,12 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 - `net_worth_snapshots` + charts
 - `projects` + `project_items` with nesting
 
-### M6 — Pages
+### M6 — Datasets
 
-- `pages(id, owner_id, parent_id, title, icon, body_html, archived_at)` — nestable
-- Single rich-text body per page (`body_html`) edited via contenteditable + execCommand toolbar; sanitized server-side in `src/lib/server/sanitize-html.ts`
-- (Earlier blocks-table model was scrapped — too fiddly. The table still exists in the DB but is unused; can be dropped in a later cleanup migration.)
+- `datasets(id, owner_id, name, columns jsonb)` — name + up to 7 user-named columns (`text`/`number`/`date`)
+- `dataset_rows(id, dataset_id, owner_id, name, data jsonb, order_index)` — rows store `{[colKey]: value}`
+- Inline-editable table UI; column manager renames update `label` (key stays stable so row data sticks)
+- (Earlier pages + blocks model was scrapped along with the rich-text page editor; both tables dropped.)
 
 ### M7 — AI assistant
 
@@ -105,7 +106,7 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 
 - Offline edits + sync (`src/lib/sync/CLAUDE.md`)
 - Spreadsheet import (`src/lib/finance/csv-import/CLAUDE.md` notes the extension hooks)
-- Real rich-text editor (Tiptap / ProseMirror) — current pages use contenteditable + execCommand
-- Block-style page model (paragraph/heading/list/checklist/data-point) — parked; the `blocks` table still exists in the DB unused
+- Notion-style pages with rich text or block model — scrapped twice; if revived, build on top of `datasets` rather than re-introducing a new table
+- More dataset column types (boolean, select, multiselect, link to another dataset)
 - Multi-currency
 - Native mobile (staying PWA)

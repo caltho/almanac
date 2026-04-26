@@ -91,22 +91,6 @@ export function createTools(supabase: TypedClient, userId: string) {
 		}),
 
 		betaZodTool({
-			name: 'list_pages',
-			description:
-				'List all (non-archived) pages with id + title. Used to find a page_id to append content to.',
-			inputSchema: z.object({}),
-			run: async () => {
-				const { data, error } = await supabase
-					.from('pages')
-					.select('id, title, parent_id, icon')
-					.is('archived_at', null)
-					.order('title');
-				if (error) return `error: ${error.message}`;
-				return JSON.stringify(data ?? []);
-			}
-		}),
-
-		betaZodTool({
 			name: 'finance_summary',
 			description:
 				'Return aggregates for a given month (YYYY-MM): total income, total spend, top 5 categories by spend.',
@@ -358,30 +342,51 @@ export function createTools(supabase: TypedClient, userId: string) {
 		}),
 
 		betaZodTool({
-			name: 'append_to_page',
+			name: 'list_datasets',
 			description:
-				'Append HTML to an existing page body. Pass plain HTML — basic tags only (p, h2, h3, ul/ol/li, strong/em/u, a). Content is sanitized server-side. Use list_pages first to find the page_id.',
-			inputSchema: z.object({
-				page_id: z.string().uuid(),
-				html: z.string().min(1)
-			}),
-			run: async ({ page_id, html }) => {
-				const { sanitizeHtml } = await import('$lib/server/sanitize-html');
-				const { data: existing, error: readErr } = await supabase
-					.from('pages')
-					.select('body_html')
-					.eq('id', page_id)
-					.maybeSingle();
-				if (readErr) return `error: ${readErr.message}`;
-				if (!existing) return `error: page ${page_id} not found`;
+				'List the user\'s datasets with id, name, and column definitions. Use this to find a dataset_id before adding rows.',
+			inputSchema: z.object({}),
+			run: async () => {
+				const { data, error } = await supabase
+					.from('datasets')
+					.select('id, name, columns')
+					.order('name');
+				if (error) return `error: ${error.message}`;
+				return JSON.stringify(data ?? []);
+			}
+		}),
 
-				const next = (existing.body_html ?? '') + sanitizeHtml(html);
-				const { error: writeErr } = await supabase
-					.from('pages')
-					.update({ body_html: next })
-					.eq('id', page_id);
-				if (writeErr) return `error: ${writeErr.message}`;
-				return `appended to page ${page_id}`;
+		betaZodTool({
+			name: 'add_dataset_row',
+			description:
+				'Append a row to a dataset. `data` is a map of column key → value; only keys that match the dataset\'s columns are stored. Call list_datasets first to find the right dataset_id and column keys.',
+			inputSchema: z.object({
+				dataset_id: z.string().uuid(),
+				name: z.string().default(''),
+				data: z.record(z.string(), z.unknown()).default({})
+			}),
+			run: async ({ dataset_id, name, data }) => {
+				const { data: last } = await supabase
+					.from('dataset_rows')
+					.select('order_index')
+					.eq('dataset_id', dataset_id)
+					.order('order_index', { ascending: false })
+					.limit(1)
+					.maybeSingle();
+
+				const { data: inserted, error } = await supabase
+					.from('dataset_rows')
+					.insert({
+						owner_id: userId,
+						dataset_id,
+						name,
+						data: data as never,
+						order_index: (last?.order_index ?? -1) + 1
+					})
+					.select('id')
+					.single();
+				if (error) return `error: ${error.message}`;
+				return `added row ${inserted.id}`;
 			}
 		})
 	];

@@ -114,9 +114,9 @@ export type ProjectItem = Pick<
 	'id' | 'project_id' | 'parent_item_id' | 'order_index' | 'title' | 'notes' | 'done_at' | 'custom'
 >;
 
-export type PageRow = Pick<
-	T['pages']['Row'],
-	'id' | 'owner_id' | 'parent_id' | 'title' | 'icon' | 'order_index' | 'updated_at'
+export type Dataset = Pick<
+	T['datasets']['Row'],
+	'id' | 'owner_id' | 'name' | 'columns' | 'updated_at'
 >;
 
 export type HotData = {
@@ -134,7 +134,7 @@ export type HotData = {
 	assets: Asset[];
 	projects: Project[];
 	projectItems: ProjectItem[];
-	pages: PageRow[];
+	datasets: Dataset[];
 	hydratedAt: number;
 };
 
@@ -153,7 +153,7 @@ export class UserData {
 	assets = $state<Asset[]>([]);
 	projects = $state<Project[]>([]);
 	projectItems = $state<ProjectItem[]>([]);
-	pages = $state<PageRow[]>([]);
+	datasets = $state<Dataset[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -171,7 +171,7 @@ export class UserData {
 		this.assets = seed.assets;
 		this.projects = seed.projects;
 		this.projectItems = seed.projectItems;
-		this.pages = seed.pages;
+		this.datasets = seed.datasets;
 		this.hydratedAt = seed.hydratedAt;
 	}
 
