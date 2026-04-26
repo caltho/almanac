@@ -5,32 +5,19 @@
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { useUserData, type Task } from '$lib/stores/userData.svelte';
 
-	type Task = {
-		id: string;
-		title: string;
-		status: 'todo' | 'doing' | 'done' | 'cancelled';
-		due_date: string | null;
-		priority: number | null;
-		description: string | null;
-		custom: unknown;
-		updated_at: string;
-	};
+	const userData = useUserData();
+	const defs = $derived(userData.defsFor('tasks'));
 
-	let { data } = $props();
-
-	// Local mutable copy — every mutation flips the UI synchronously, then
-	// posts to /tasks/api. Rollback on failure. No server round-trip waits.
-	// svelte-ignore state_referenced_locally
-	let tasks = $state<Task[]>(data.tasks as Task[]);
 	let newTitle = $state('');
 	let error = $state<string | null>(null);
 
 	const byStatus = $derived({
-		todo: tasks.filter((t) => t.status === 'todo'),
-		doing: tasks.filter((t) => t.status === 'doing'),
-		done: tasks.filter((t) => t.status === 'done'),
-		cancelled: tasks.filter((t) => t.status === 'cancelled')
+		todo: userData.tasks.filter((t) => t.status === 'todo'),
+		doing: userData.tasks.filter((t) => t.status === 'doing'),
+		done: userData.tasks.filter((t) => t.status === 'done'),
+		cancelled: userData.tasks.filter((t) => t.status === 'cancelled')
 	});
 
 	const STATUS_LABELS = {
@@ -63,7 +50,7 @@
 	async function toggleDone(task: Task) {
 		const prev = task.status;
 		const next = task.status === 'done' ? 'todo' : 'done';
-		task.status = next;
+		userData.updateTask(task.id, { status: next });
 		try {
 			const res = await fetch('/tasks/api', {
 				method: 'POST',
@@ -72,16 +59,14 @@
 			});
 			if (!res.ok) throw new Error(await res.text());
 		} catch (e) {
-			task.status = prev;
+			userData.updateTask(task.id, { status: prev });
 			error = e instanceof Error ? e.message : 'Failed to update';
 		}
 	}
 
 	async function deleteTask(task: Task) {
-		const idx = tasks.findIndex((t) => t.id === task.id);
-		if (idx < 0) return;
-		const prev = tasks.slice();
-		tasks.splice(idx, 1);
+		const prev = task;
+		userData.removeTask(task.id);
 		try {
 			const res = await fetch('/tasks/api', {
 				method: 'POST',
@@ -90,7 +75,7 @@
 			});
 			if (!res.ok) throw new Error(await res.text());
 		} catch (e) {
-			tasks = prev;
+			userData.addTask(prev);
 			error = e instanceof Error ? e.message : 'Failed to delete';
 		}
 	}
@@ -104,15 +89,17 @@
 		const tempId = `tmp-${Math.random().toString(36).slice(2)}`;
 		const temp: Task = {
 			id: tempId,
+			owner_id: '',
 			title,
 			status: 'todo',
 			due_date: null,
 			priority: null,
 			description: null,
+			completed_at: null,
 			custom: {},
 			updated_at: new Date().toISOString()
 		};
-		tasks.unshift(temp);
+		userData.addTask(temp);
 		try {
 			const res = await fetch('/tasks/api', {
 				method: 'POST',
@@ -121,10 +108,9 @@
 			});
 			if (!res.ok) throw new Error(await res.text());
 			const body = (await res.json()) as { task: Task };
-			const idx = tasks.findIndex((t) => t.id === tempId);
-			if (idx >= 0) tasks[idx] = body.task;
+			userData.replaceTask(tempId, body.task);
 		} catch (err) {
-			tasks = tasks.filter((t) => t.id !== tempId);
+			userData.removeTask(tempId);
 			error = err instanceof Error ? err.message : 'Failed to add';
 		}
 	}
@@ -193,7 +179,7 @@
 											<Badge variant="outline" class="text-[10px]">P{t.priority}</Badge>
 										{/if}
 									</div>
-									<AttrsRenderer defs={data.defs} values={t.custom as Record<string, unknown>} />
+									<AttrsRenderer {defs} values={t.custom as Record<string, unknown>} />
 								</a>
 
 								<Button
@@ -211,7 +197,7 @@
 				</section>
 			{/if}
 		{/each}
-		{#if tasks.length === 0}
+		{#if userData.tasks.length === 0}
 			<p class="text-sm text-muted-foreground">No tasks yet.</p>
 		{/if}
 	</div>

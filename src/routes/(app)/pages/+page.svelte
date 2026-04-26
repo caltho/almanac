@@ -5,11 +5,14 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import FileText from '@lucide/svelte/icons/file-text';
+	import { useUserData, type PageRow } from '$lib/stores/userData.svelte';
 
-	let { data, form } = $props();
+	let { form } = $props();
+
+	const userData = useUserData();
 
 	const childrenOf = $derived((parent: string | null) =>
-		data.pages.filter((p) => p.parent_id === parent)
+		userData.pages.filter((p) => p.parent_id === parent)
 	);
 	const roots = $derived(childrenOf(null));
 </script>
@@ -44,7 +47,7 @@
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
 				>
 					<option value="">— top level —</option>
-					{#each data.pages as p (p.id)}
+					{#each userData.pages as p (p.id)}
 						<option value={p.id}>{p.title}</option>
 					{/each}
 				</select>
@@ -61,13 +64,13 @@
 	</form>
 </Card.Root>
 
-{#if data.pages.length === 0}
+{#if userData.pages.length === 0}
 	<p class="text-sm text-muted-foreground">No pages yet.</p>
 {:else}
 	{@render tree(roots, 0)}
 {/if}
 
-{#snippet tree(items: typeof data.pages, depth: number)}
+{#snippet tree(items: PageRow[], depth: number)}
 	<ul class="space-y-1">
 		{#each items as p (p.id)}
 			<li>

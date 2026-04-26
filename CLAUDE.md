@@ -39,6 +39,7 @@ src/lib/custom-attrs/# user-definable attribute system (powers "customizable fro
 src/lib/blocks/      # Notion-lite block registry (pages feature)
 src/lib/ai/          # Anthropic client, tools, chat loop
 src/lib/finance/     # CSV import, rule engine, pg_trgm categoriser
+src/lib/stores/      # client-side userData store hydrated from (app)/+layout.server.ts
 src/lib/sync/        # STUB — deferred offline-sync extension points
 src/routes/(auth)/   # auth screens
 src/routes/(app)/    # authenticated app routes (journal, sleep, tasks, finance, assets, projects, pages, settings)
@@ -47,9 +48,10 @@ src/routes/api/ai/   # AI chat endpoint (tool-use loop)
 
 ## Conventions
 
-- **Forms:** use SvelteKit form actions for mutations. Client-only mutations go via typed helpers in `src/lib/db/`.
+- **Hot data lives in the userData store.** `(app)/+layout.server.ts` runs one big `Promise.all` (`loadHotData`) on entry to the authenticated shell, and pages read reactive fields via `useUserData()` — no per-page server load for list views. See `src/lib/stores/CLAUDE.md` for what's hot vs. cold and the rules for adding new tables.
+- **Forms:** use SvelteKit form actions for mutations. Client-only mutations go via typed helpers in `src/lib/db/`. After a form action's `enhance` calls `update()`, the layout re-runs and the userData store re-hydrates automatically — no extra invalidation needed.
 - **Server-only code:** `*.server.ts` suffix or place in `src/lib/server/`. Never import these from `+page.svelte`.
-- **Custom attrs:** every fixed-domain table has a `custom jsonb` column. UI for adding/removing keys is powered by `custom_attribute_defs` + `src/lib/custom-attrs/`.
+- **Custom attrs:** every fixed-domain table has a `custom jsonb` column. UI for adding/removing keys is powered by `custom_attribute_defs` + `src/lib/custom-attrs/`. All defs are loaded once into the userData store; reach for `userData.defsFor('table_name')` instead of calling `loadDefs` from a page load.
 - **Shares:** access control beyond "my own rows" goes through the `shares` table and its RLS helpers. Never write ad-hoc access checks in app code.
 - **Deferred features:** live as CLAUDE.md stubs in their intended directories (e.g. `src/lib/sync/CLAUDE.md`). Don't delete these — they hold the extension-point design.
 

@@ -1,23 +1,9 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
-import { loadDefs } from '$lib/custom-attrs/server';
+import type { Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const ownerId = locals.user!.id;
-	const [{ data: tasks }, defs] = await Promise.all([
-		locals.supabase
-			.from('tasks')
-			.select(
-				'id, owner_id, title, description, status, due_date, priority, completed_at, custom, updated_at'
-			)
-			.is('deleted_at', null)
-			.order('status', { ascending: true })
-			.order('due_date', { ascending: true, nullsFirst: false })
-			.order('created_at', { ascending: false }),
-		loadDefs(locals.supabase, ownerId, 'tasks')
-	]);
-	return { tasks: tasks ?? [], defs };
-};
+// Data for this page is hydrated by `(app)/+layout.server.ts` into the
+// userData store. These form actions remain so plain-form fallbacks (no JS)
+// keep working; the JS path uses /tasks/api for instant optimistic updates.
 
 export const actions: Actions = {
 	quickAdd: async ({ request, locals }) => {

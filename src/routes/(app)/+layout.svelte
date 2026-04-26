@@ -7,8 +7,19 @@
 	import LogOut from '@lucide/svelte/icons/log-out';
 	import Users from '@lucide/svelte/icons/users';
 	import { NAV_ITEMS } from '$lib/nav';
+	import { setUserData } from '$lib/stores/userData.svelte';
 
 	let { children, data } = $props();
+
+	// Hydrate the per-request store from the layout's hot-data load. Re-runs
+	// whenever `data.userData` changes (e.g. after a form action's `update()`
+	// or an explicit `invalidate('almanac:userData')`), so all child pages
+	// reading from `useUserData()` see fresh values without a re-mount.
+	// svelte-ignore state_referenced_locally
+	const userData = setUserData(data.userData);
+	$effect(() => {
+		userData.hydrate(data.userData);
+	});
 
 	const displayName = $derived(
 		data.profile?.display_name ?? data.user?.email?.split('@')[0] ?? 'You'

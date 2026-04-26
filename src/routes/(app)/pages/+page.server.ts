@@ -1,16 +1,9 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const { data: pages } = await locals.supabase
-		.from('pages')
-		.select('id, parent_id, title, icon, order_index, updated_at')
-		.is('archived_at', null)
-		.order('parent_id', { nullsFirst: true })
-		.order('order_index')
-		.order('title');
-	return { pages: pages ?? [] };
-};
+// List data flows through (app)/+layout.server.ts → userData store. The
+// `create` action stays here for progressive-enhancement; on success,
+// `enhance`'s `update()` invalidates the layout and the store re-hydrates.
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {

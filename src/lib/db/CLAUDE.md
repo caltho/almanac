@@ -15,3 +15,4 @@ Typed Supabase client factories. Browser + server variants, plus generated datab
 - **Never read `SUPABASE_SERVICE_ROLE_KEY` outside `service.ts`.** The key must only be referenced in one file to keep the blast radius tight.
 - **All queries are typed via `Database` from `types.ts`.** Example: `supabase.from<'profiles'>('profiles')` — let TypeScript infer columns.
 - **Anon key** (public) is `PUBLIC_SUPABASE_ANON_KEY`; **service key** (secret) is `SUPABASE_SERVICE_ROLE_KEY`. Follow SvelteKit env conventions (`$env/static/public` vs `$env/static/private`).
+- **List-page reads go through the userData store**, not direct queries. `src/lib/stores/server.ts` `loadHotData()` is the single place new hot tables get added; pages read via `useUserData()`. Use direct `locals.supabase` queries for cold data (finance month windows, blocks, full-row detail) and for mutations.

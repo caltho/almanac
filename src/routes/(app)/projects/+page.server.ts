@@ -1,28 +1,9 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const [{ data: projects }, { data: itemCounts }] = await Promise.all([
-		locals.supabase
-			.from('projects')
-			.select('id, parent_id, name, description, status, color, updated_at')
-			.order('name'),
-		locals.supabase.from('project_items').select('project_id, done_at')
-	]);
-
-	const stats = new Map<string, { total: number; done: number }>();
-	for (const i of itemCounts ?? []) {
-		const s = stats.get(i.project_id) ?? { total: 0, done: 0 };
-		s.total++;
-		if (i.done_at) s.done++;
-		stats.set(i.project_id, s);
-	}
-
-	return {
-		projects: projects ?? [],
-		stats: Object.fromEntries(stats)
-	};
-};
+// Data flows through (app)/+layout.server.ts → userData store. Form action
+// stays for progressive enhancement; on success, `enhance`'s `update()`
+// invalidates the layout and the store re-hydrates.
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {

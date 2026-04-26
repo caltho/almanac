@@ -1,41 +1,11 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { loadDefs } from '$lib/custom-attrs/server';
 import { parseCustomFormData } from '$lib/custom-attrs/validate';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
-	const kindFilter = url.searchParams.get('kind') ?? '';
-	const tagFilter = url.searchParams.get('tag') ?? '';
-	const search = url.searchParams.get('q') ?? '';
-
-	let query = locals.supabase
-		.from('assets')
-		.select(
-			'id, owner_id, name, kind, value, currency, acquired_on, location, tags, notes, custom, archived_at, updated_at'
-		)
-		.is('archived_at', null)
-		.order('name', { ascending: true });
-
-	if (kindFilter) query = query.eq('kind', kindFilter as never);
-	if (search) query = query.ilike('name', `%${search}%`);
-	if (tagFilter) query = query.contains('tags', [tagFilter]);
-
-	const [{ data: assets }, defs] = await Promise.all([
-		query,
-		loadDefs(locals.supabase, locals.user!.id, 'assets')
-	]);
-
-	// Pull unique tags for chip filter.
-	const tagSet = new Set<string>();
-	for (const a of assets ?? []) for (const t of a.tags ?? []) tagSet.add(t);
-
-	return {
-		assets: assets ?? [],
-		defs,
-		filters: { kind: kindFilter, tag: tagFilter, q: search },
-		tags: [...tagSet].sort()
-	};
-};
+// Asset list data flows through (app)/+layout.server.ts → userData store.
+// Filters (kind / tag / search) are applied client-side over the loaded list
+// so changing them doesn't trigger a server round-trip.
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {

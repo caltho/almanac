@@ -6,18 +6,25 @@
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Archive from '@lucide/svelte/icons/archive';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import { useUserData, type Habit } from '$lib/stores/userData.svelte';
 
-	let { data, form } = $props();
+	let { form } = $props();
 
-	// Local, optimistic copy of the checks map. Seeded from server data on first
-	// render; mutated immediately on click, posted in the background. See
-	// /habits/api/+server.ts for the rollback story on error.
-	// svelte-ignore state_referenced_locally
-	let ticksLocal = $state<Record<string, Set<string>>>(
-		Object.fromEntries(Object.entries(data.ticks).map(([k, v]) => [k, new Set(v as string[])]))
-	);
-	// svelte-ignore state_referenced_locally
-	let habitsLocal = $state(data.habits);
+	const userData = useUserData();
+	const defs = $derived(userData.defsFor('habits'));
+
+	const WEEK = 7;
+	const days = $derived.by(() => {
+		const out: string[] = [];
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		for (let i = 0; i < WEEK; i++) {
+			const d = new Date(today);
+			d.setDate(d.getDate() - i);
+			out.push(d.toISOString().slice(0, 10));
+		}
+		return out;
+	});
 
 	let adding = $state(false);
 
@@ -33,13 +40,8 @@
 	}
 
 	async function toggle(habit_id: string, check_date: string) {
-		const set = ticksLocal[habit_id] ?? new Set<string>();
-		const wasTicked = set.has(check_date);
-		// Optimistic flip
-		if (wasTicked) set.delete(check_date);
-		else set.add(check_date);
-		ticksLocal = { ...ticksLocal, [habit_id]: new Set(set) };
-
+		const wasTicked = userData.habitTickedOn(habit_id, check_date);
+		userData.toggleHabitCheck(habit_id, check_date, !wasTicked);
 		try {
 			const res = await fetch('/habits/api', {
 				method: 'POST',
@@ -48,25 +50,23 @@
 			});
 			if (!res.ok) throw new Error(await res.text());
 		} catch {
-			// Rollback on failure
-			if (wasTicked) set.add(check_date);
-			else set.delete(check_date);
-			ticksLocal = { ...ticksLocal, [habit_id]: new Set(set) };
+			userData.toggleHabitCheck(habit_id, check_date, wasTicked);
 		}
 	}
 
-	async function archive(habit_id: string) {
-		const prev = habitsLocal;
-		habitsLocal = habitsLocal.filter((h) => h.id !== habit_id);
+	async function archive(habit: Habit) {
+		userData.removeHabit(habit.id);
 		try {
 			const res = await fetch('/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ op: 'archive', habit_id })
+				body: JSON.stringify({ op: 'archive', habit_id: habit.id })
 			});
 			if (!res.ok) throw new Error();
 		} catch {
-			habitsLocal = prev;
+			// Re-fetch authoritative state on failure rather than guessing the
+			// row's pre-archive position in the list.
+			userData.habits = [...userData.habits, habit];
 		}
 	}
 </script>
@@ -113,7 +113,7 @@
 		</form>
 	</Card.Root>
 
-	{#if habitsLocal.length === 0}
+	{#if userData.habits.length === 0}
 		<p class="text-sm text-muted-foreground">No habits yet.</p>
 	{:else}
 		<div class="rounded-md border">
@@ -122,26 +122,25 @@
 			>
 				<span>Habit</span>
 				<div class="flex gap-1">
-					{#each data.days.slice().reverse() as d (d)}
+					{#each days.slice().reverse() as d (d)}
 						<span class="grid w-7 place-items-center">{shortDay(d)}</span>
 					{/each}
 				</div>
 				<span></span>
 			</div>
 			<ul class="divide-y divide-border">
-				{#each habitsLocal as h (h.id)}
-					{@const set = ticksLocal[h.id] ?? new Set<string>()}
+				{#each userData.habits as h (h.id)}
 					<li class="grid grid-cols-[1fr_auto_auto] items-start gap-3 p-3">
 						<a href={`/habits/${h.id}`} class="min-w-0 space-y-1">
 							<div class="font-medium">{h.name}</div>
 							{#if h.description}
 								<p class="line-clamp-1 text-xs text-muted-foreground">{h.description}</p>
 							{/if}
-							<AttrsRenderer defs={data.defs} values={h.custom as Record<string, unknown>} />
+							<AttrsRenderer {defs} values={h.custom as Record<string, unknown>} />
 						</a>
 						<div class="flex gap-1">
-							{#each data.days.slice().reverse() as d (d)}
-								{@const ticked = set.has(d)}
+							{#each days.slice().reverse() as d (d)}
+								{@const ticked = userData.habitTickedOn(h.id, d)}
 								<button
 									type="button"
 									onclick={() => toggle(h.id, d)}
@@ -161,7 +160,7 @@
 							variant="ghost"
 							size="icon-sm"
 							aria-label="Archive"
-							onclick={() => archive(h.id)}
+							onclick={() => archive(h)}
 						>
 							<Archive class="size-4" />
 						</Button>

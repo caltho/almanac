@@ -7,11 +7,25 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import { useUserData, type Project } from '$lib/stores/userData.svelte';
 
-	let { data, form } = $props();
+	let { form } = $props();
+
+	const userData = useUserData();
+
+	const stats = $derived.by(() => {
+		const out = new Map<string, { total: number; done: number }>();
+		for (const i of userData.projectItems) {
+			const s = out.get(i.project_id) ?? { total: 0, done: 0 };
+			s.total++;
+			if (i.done_at) s.done++;
+			out.set(i.project_id, s);
+		}
+		return out;
+	});
 
 	const childrenOf = $derived((parent: string | null) =>
-		data.projects.filter((p) => p.parent_id === parent)
+		userData.projects.filter((p) => p.parent_id === parent)
 	);
 	const roots = $derived(childrenOf(null));
 </script>
@@ -50,7 +64,7 @@
 					class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
 				>
 					<option value="">— top level —</option>
-					{#each data.projects as p (p.id)}
+					{#each userData.projects as p (p.id)}
 						<option value={p.id}>{p.name}</option>
 					{/each}
 				</select>
@@ -67,16 +81,16 @@
 	</form>
 </Card.Root>
 
-{#if data.projects.length === 0}
+{#if userData.projects.length === 0}
 	<p class="text-sm text-muted-foreground">No projects yet.</p>
 {:else}
 	{@render tree(roots, 0)}
 {/if}
 
-{#snippet tree(items: typeof data.projects, depth: number)}
+{#snippet tree(items: Project[], depth: number)}
 	<ul class="space-y-2">
 		{#each items as p (p.id)}
-			{@const s = data.stats[p.id] ?? { total: 0, done: 0 }}
+			{@const s = stats.get(p.id) ?? { total: 0, done: 0 }}
 			<li class="rounded-md border">
 				<a
 					href={`/projects/${p.id}`}

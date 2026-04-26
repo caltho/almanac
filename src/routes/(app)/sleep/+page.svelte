@@ -9,8 +9,12 @@
 	import { AttrsEditor, AttrsRenderer } from '$lib/custom-attrs';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { useUserData } from '$lib/stores/userData.svelte';
 
-	let { data, form } = $props();
+	let { form } = $props();
+
+	const userData = useUserData();
+	const defs = $derived(userData.defsFor('sleep_logs'));
 
 	let values = $state<Record<string, unknown>>({});
 	let submitting = $state(false);
@@ -126,9 +130,9 @@
 					<Textarea id="notes" name="notes" rows={2} />
 				</div>
 
-				{#if data.defs.length > 0}
+				{#if defs.length > 0}
 					<div class="sm:col-span-2 lg:col-span-3">
-						<AttrsEditor defs={data.defs} bind:values errors={fieldErrors} />
+						<AttrsEditor {defs} bind:values errors={fieldErrors} />
 					</div>
 				{/if}
 
@@ -144,11 +148,11 @@
 		</form>
 	</Card.Root>
 
-	{#if data.logs.length === 0}
+	{#if userData.sleepLogs.length === 0}
 		<p class="text-sm text-muted-foreground">No nights logged yet.</p>
 	{:else}
 		<ul class="divide-y divide-border rounded-md border">
-			{#each data.logs as log (log.id)}
+			{#each userData.sleepLogs as log (log.id)}
 				<li class="space-y-2 p-4 text-sm">
 					<div class="flex flex-wrap items-center gap-3">
 						<time class="text-xs tracking-widest text-muted-foreground uppercase"
@@ -174,7 +178,7 @@
 						</form>
 					</div>
 					{#if log.notes}<p class="whitespace-pre-wrap">{log.notes}</p>{/if}
-					<AttrsRenderer defs={data.defs} values={log.custom as Record<string, unknown>} />
+					<AttrsRenderer {defs} values={log.custom as Record<string, unknown>} />
 				</li>
 			{/each}
 		</ul>

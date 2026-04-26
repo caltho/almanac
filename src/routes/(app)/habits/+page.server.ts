@@ -1,57 +1,9 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
-import { loadDefs } from '$lib/custom-attrs/server';
+import type { Actions } from './$types';
 
-const WEEK = 7;
-
-function isoDate(d: Date): string {
-	return d.toISOString().slice(0, 10);
-}
-
-function lastNDays(n: number): string[] {
-	const out: string[] = [];
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	for (let i = 0; i < n; i++) {
-		const d = new Date(today);
-		d.setDate(d.getDate() - i);
-		out.push(isoDate(d));
-	}
-	return out;
-}
-
-export const load: PageServerLoad = async ({ locals }) => {
-	const ownerId = locals.user!.id;
-	const days = lastNDays(WEEK);
-	const oldest = days[days.length - 1];
-
-	const [{ data: habits }, { data: checks }, defs] = await Promise.all([
-		locals.supabase
-			.from('habits')
-			.select('id, owner_id, name, description, cadence, archived_at, custom, updated_at')
-			.is('archived_at', null)
-			.order('created_at', { ascending: true }),
-		locals.supabase
-			.from('habit_checks')
-			.select('id, habit_id, check_date')
-			.gte('check_date', oldest),
-		loadDefs(locals.supabase, ownerId, 'habits')
-	]);
-
-	// Map habit_id -> set of dates checked in the window.
-	const ticks = new Map<string, Set<string>>();
-	for (const c of checks ?? []) {
-		if (!ticks.has(c.habit_id)) ticks.set(c.habit_id, new Set());
-		ticks.get(c.habit_id)!.add(c.check_date);
-	}
-
-	return {
-		habits: habits ?? [],
-		days,
-		ticks: Object.fromEntries(Array.from(ticks.entries()).map(([k, v]) => [k, [...v]])),
-		defs
-	};
-};
+// Data flows through (app)/+layout.server.ts → userData store. Actions stay
+// for plain-form fallbacks; the JS path uses /habits/api for instant
+// optimistic updates.
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {

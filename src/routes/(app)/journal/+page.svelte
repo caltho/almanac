@@ -4,8 +4,10 @@
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import { useUserData } from '$lib/stores/userData.svelte';
 
-	let { data } = $props();
+	const userData = useUserData();
+	const defs = $derived(userData.defsFor('journal_entries'));
 
 	function fmt(date: string) {
 		return new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
@@ -35,14 +37,14 @@
 		</div>
 	</header>
 
-	{#if data.entries.length === 0}
+	{#if userData.journalEntries.length === 0}
 		<div class="rounded-md border p-8 text-center">
 			<p class="text-sm text-muted-foreground">No entries yet.</p>
 			<Button class="mt-4" href="/journal/new">Write the first one</Button>
 		</div>
 	{:else}
 		<ul class="divide-y divide-border rounded-md border">
-			{#each data.entries as e (e.id)}
+			{#each userData.journalEntries as e (e.id)}
 				<li class="p-4 hover:bg-muted/30">
 					<a href={`/journal/${e.id}`} class="block space-y-2">
 						<div class="flex flex-wrap items-center gap-2">
@@ -59,7 +61,7 @@
 						{#if e.body}
 							<p class="line-clamp-2 text-sm text-muted-foreground">{e.body}</p>
 						{/if}
-						<AttrsRenderer defs={data.defs} values={e.custom as Record<string, unknown>} />
+						<AttrsRenderer {defs} values={e.custom as Record<string, unknown>} />
 					</a>
 				</li>
 			{/each}

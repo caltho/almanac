@@ -1,23 +1,11 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { loadDefs } from '$lib/custom-attrs/server';
 import { parseCustomFormData } from '$lib/custom-attrs/validate';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const ownerId = locals.user!.id;
-	const [{ data: logs }, defs] = await Promise.all([
-		locals.supabase
-			.from('sleep_logs')
-			.select(
-				'id, owner_id, log_date, went_to_bed, woke_up, hours_slept, quality, notes, custom, updated_at'
-			)
-			.is('deleted_at', null)
-			.order('log_date', { ascending: false })
-			.limit(60),
-		loadDefs(locals.supabase, ownerId, 'sleep_logs')
-	]);
-	return { logs: logs ?? [], defs };
-};
+// Data flows through (app)/+layout.server.ts → userData store. Actions stay
+// here so progressive-enhanced forms work; on success, `enhance`'s `update()`
+// invalidates the layout and the store re-hydrates.
 
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
