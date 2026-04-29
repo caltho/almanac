@@ -21,7 +21,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	if (!habit) throw error(404, 'Habit not found');
 
-	// Streak: count consecutive days ending today or yesterday.
 	const tickDates = new Set((checks ?? []).map((c) => c.check_date));
 	let streak = 0;
 	const today = new Date();
@@ -73,6 +72,6 @@ export const actions: Actions = {
 	delete: async ({ params, locals }) => {
 		const { error: delError } = await locals.supabase.from('habits').delete().eq('id', params.id);
 		if (delError) return fail(500, { error: delError.message });
-		throw redirect(303, '/habits');
+		throw redirect(303, '/tracking/habits');
 	}
 };

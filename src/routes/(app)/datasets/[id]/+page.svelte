@@ -38,7 +38,7 @@
 		return 'text';
 	}
 
-	function rowValue(row: typeof data.rows[number], col: DatasetColumn): string {
+	function rowValue(row: (typeof data.rows)[number], col: DatasetColumn): string {
 		const v = asRowData(row.data)[col.key];
 		if (v === null || v === undefined) return '';
 		return String(v);
@@ -130,7 +130,9 @@
 							method="POST"
 							action="?/deleteColumn"
 							use:enhance={({ cancel }) => {
-								if (!confirm(`Remove column "${col.label}"? Existing row values are kept but hidden.`))
+								if (
+									!confirm(`Remove column "${col.label}"? Existing row values are kept but hidden.`)
+								)
 									cancel();
 								return async ({ update }) => await update();
 							}}
@@ -156,7 +158,12 @@
 			>
 				<div class="space-y-1">
 					<Label for="new-col-label">New column label</Label>
-					<Input id="new-col-label" name="label" placeholder="e.g. Author, Rating, Date read" required />
+					<Input
+						id="new-col-label"
+						name="label"
+						placeholder="e.g. Author, Rating, Date read"
+						required
+					/>
 				</div>
 				<div class="space-y-1">
 					<Label for="new-col-type">Type</Label>
@@ -216,21 +223,13 @@
 		>
 			<input type="hidden" name="id" value={row.id} />
 		</form>
-		<form
-			id={`del-row-${row.id}`}
-			method="POST"
-			action="?/deleteRow"
-			use:enhance
-			class="hidden"
-		>
+		<form id={`del-row-${row.id}`} method="POST" action="?/deleteRow" use:enhance class="hidden">
 			<input type="hidden" name="id" value={row.id} />
 		</form>
 	{/each}
 
 	{#if data.rows.length === 0}
-		<p class="px-3 py-6 text-center text-sm text-muted-foreground">
-			No rows yet. Add one below.
-		</p>
+		<p class="px-3 py-6 text-center text-sm text-muted-foreground">No rows yet. Add one below.</p>
 	{:else}
 		<ul class="divide-y divide-border">
 			{#each data.rows as row (row.id)}

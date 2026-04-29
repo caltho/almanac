@@ -31,6 +31,22 @@
 	--chart-4: oklch(0.37 0.013 285.805);
 	--chart-5: oklch(0.274 0.006 286.033);
 	--radius: 0.625rem;
+
+	/*
+	 * Shared 8-color palette (colorblind-friendly, Wong/Okabe-Ito-derived).
+	 * Token names match src/lib/palette.ts. CSS variables let us drop the
+	 * inline `style={`background:${hex}`}` pattern in favour of
+	 * `style="background:var(--palette-blue)"` once we want themed swatches.
+	 */
+	--palette-slate: #6b7280;
+	--palette-red: #d55e00;
+	--palette-orange: #e69f00;
+	--palette-yellow: #e2c044;
+	--palette-green: #009e73;
+	--palette-teal: #56b4e9;
+	--palette-blue: #0072b2;
+	--palette-purple: #cc79a7;
+
 	--sidebar: oklch(0.985 0 0);
 	--sidebar-foreground: oklch(0.141 0.005 285.823);
 	--sidebar-primary: oklch(0.21 0.006 285.885);

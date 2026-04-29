@@ -59,14 +59,7 @@ export type Task = Pick<
 
 export type Habit = Pick<
 	T['habits']['Row'],
-	| 'id'
-	| 'owner_id'
-	| 'name'
-	| 'description'
-	| 'cadence'
-	| 'archived_at'
-	| 'custom'
-	| 'updated_at'
+	'id' | 'owner_id' | 'name' | 'description' | 'cadence' | 'archived_at' | 'custom' | 'updated_at'
 >;
 
 export type HabitCheck = Pick<T['habit_checks']['Row'], 'id' | 'habit_id' | 'check_date'>;
@@ -106,12 +99,15 @@ export type Asset = Pick<
 
 export type Project = Pick<
 	T['projects']['Row'],
-	'id' | 'owner_id' | 'parent_id' | 'name' | 'description' | 'status' | 'color' | 'updated_at'
->;
-
-export type ProjectItem = Pick<
-	T['project_items']['Row'],
-	'id' | 'project_id' | 'parent_item_id' | 'order_index' | 'title' | 'notes' | 'done_at' | 'custom'
+	| 'id'
+	| 'owner_id'
+	| 'parent_id'
+	| 'name'
+	| 'description'
+	| 'body_html'
+	| 'status'
+	| 'color'
+	| 'updated_at'
 >;
 
 export type Dataset = Pick<
@@ -127,9 +123,29 @@ export type ShoppingItem = Pick<
 	| 'status'
 	| 'restock_period'
 	| 'last_purchased_at'
+	| 'color'
 	| 'notes'
 	| 'custom'
 	| 'updated_at'
+>;
+
+export type Recipe = Pick<
+	T['recipes']['Row'],
+	| 'id'
+	| 'owner_id'
+	| 'name'
+	| 'description'
+	| 'ingredients_html'
+	| 'method_html'
+	| 'custom'
+	| 'updated_at'
+>;
+
+export type Checklist = Pick<T['checklists']['Row'], 'id' | 'owner_id' | 'name' | 'updated_at'>;
+
+export type ChecklistItem = Pick<
+	T['checklist_items']['Row'],
+	'id' | 'checklist_id' | 'title' | 'checked' | 'order_index'
 >;
 
 export type Activity = Pick<
@@ -137,10 +153,7 @@ export type Activity = Pick<
 	'id' | 'owner_id' | 'name' | 'color' | 'order_index' | 'updated_at'
 >;
 
-export type ActivityLog = Pick<
-	T['activity_logs']['Row'],
-	'id' | 'activity_id' | 'log_date'
->;
+export type ActivityLog = Pick<T['activity_logs']['Row'], 'id' | 'activity_id' | 'log_date'>;
 
 export type HotData = {
 	profile: Profile | null;
@@ -156,11 +169,13 @@ export type HotData = {
 	recentTransactions: Transaction[];
 	assets: Asset[];
 	projects: Project[];
-	projectItems: ProjectItem[];
 	datasets: Dataset[];
 	shoppingItems: ShoppingItem[];
 	activities: Activity[];
 	activityLogs: ActivityLog[];
+	recipes: Recipe[];
+	checklists: Checklist[];
+	checklistItems: ChecklistItem[];
 	hydratedAt: number;
 };
 
@@ -178,11 +193,13 @@ export class UserData {
 	recentTransactions = $state<Transaction[]>([]);
 	assets = $state<Asset[]>([]);
 	projects = $state<Project[]>([]);
-	projectItems = $state<ProjectItem[]>([]);
 	datasets = $state<Dataset[]>([]);
 	shoppingItems = $state<ShoppingItem[]>([]);
 	activities = $state<Activity[]>([]);
 	activityLogs = $state<ActivityLog[]>([]);
+	recipes = $state<Recipe[]>([]);
+	checklists = $state<Checklist[]>([]);
+	checklistItems = $state<ChecklistItem[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -199,12 +216,50 @@ export class UserData {
 		this.recentTransactions = seed.recentTransactions;
 		this.assets = seed.assets;
 		this.projects = seed.projects;
-		this.projectItems = seed.projectItems;
 		this.datasets = seed.datasets;
 		this.shoppingItems = seed.shoppingItems;
 		this.activities = seed.activities;
 		this.activityLogs = seed.activityLogs;
+		this.recipes = seed.recipes;
+		this.checklists = seed.checklists;
+		this.checklistItems = seed.checklistItems;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Recipes -------------------------------------------------------------
+	addRecipe(r: Recipe) {
+		this.recipes = [r, ...this.recipes];
+	}
+	updateRecipe(id: string, patch: Partial<Recipe>) {
+		const i = this.recipes.findIndex((r) => r.id === id);
+		if (i >= 0) this.recipes[i] = { ...this.recipes[i], ...patch };
+	}
+	removeRecipe(id: string) {
+		this.recipes = this.recipes.filter((r) => r.id !== id);
+	}
+
+	// --- Checklists ----------------------------------------------------------
+	addChecklist(c: Checklist) {
+		this.checklists = [c, ...this.checklists];
+	}
+	removeChecklist(id: string) {
+		this.checklists = this.checklists.filter((c) => c.id !== id);
+		this.checklistItems = this.checklistItems.filter((i) => i.checklist_id !== id);
+	}
+	addChecklistItem(item: ChecklistItem) {
+		this.checklistItems = [...this.checklistItems, item];
+	}
+	updateChecklistItem(id: string, patch: Partial<ChecklistItem>) {
+		const i = this.checklistItems.findIndex((x) => x.id === id);
+		if (i >= 0) this.checklistItems[i] = { ...this.checklistItems[i], ...patch };
+	}
+	removeChecklistItem(id: string) {
+		this.checklistItems = this.checklistItems.filter((x) => x.id !== id);
+	}
+	clearChecklistChecks(checklist_id: string) {
+		this.checklistItems = this.checklistItems.map((i) =>
+			i.checklist_id === checklist_id && i.checked ? { ...i, checked: false } : i
+		);
 	}
 
 	// --- Activities ----------------------------------------------------------
@@ -216,9 +271,7 @@ export class UserData {
 		this.activityLogs = this.activityLogs.filter((l) => l.activity_id !== id);
 	}
 	activityLoggedOn(activity_id: string, log_date: string): ActivityLog | undefined {
-		return this.activityLogs.find(
-			(l) => l.activity_id === activity_id && l.log_date === log_date
-		);
+		return this.activityLogs.find((l) => l.activity_id === activity_id && l.log_date === log_date);
 	}
 	toggleActivityLog(activity_id: string, log_date: string, on: boolean, tempId?: string) {
 		const existing = this.activityLoggedOn(activity_id, log_date);

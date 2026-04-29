@@ -2,7 +2,6 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	asColumns,
-	asRowData,
 	MAX_DATASET_COLUMNS,
 	type DatasetColumn,
 	type DatasetColumnType
@@ -33,10 +32,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	};
 };
 
-async function loadColumns(
-	supabase: App.Locals['supabase'],
-	id: string
-): Promise<DatasetColumn[]> {
+async function loadColumns(supabase: App.Locals['supabase'], id: string): Promise<DatasetColumn[]> {
 	const { data } = await supabase.from('datasets').select('columns').eq('id', id).maybeSingle();
 	return asColumns(data?.columns);
 }
@@ -64,7 +60,10 @@ export const actions: Actions = {
 			return fail(400, { error: `At most ${MAX_DATASET_COLUMNS} columns.` });
 		}
 
-		const key = suggestKey(label, cols.map((c) => c.key));
+		const key = suggestKey(
+			label,
+			cols.map((c) => c.key)
+		);
 		const candidate = { key, label, type };
 		const parsed = columnSchema.safeParse(candidate);
 		if (!parsed.success) {
@@ -180,4 +179,3 @@ export const actions: Actions = {
 		throw redirect(303, '/datasets');
 	}
 };
-

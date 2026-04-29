@@ -51,11 +51,13 @@ export async function loadHotData(
 		{ data: recentTransactions },
 		{ data: assets },
 		{ data: projects },
-		{ data: projectItems },
 		{ data: datasets },
 		{ data: shoppingItems },
 		{ data: activities },
-		{ data: activityLogs }
+		{ data: activityLogs },
+		{ data: recipes },
+		{ data: checklists },
+		{ data: checklistItems }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -99,10 +101,7 @@ export async function loadHotData(
 			.select('id, owner_id, name, description, cadence, archived_at, custom, updated_at')
 			.is('archived_at', null)
 			.order('created_at', { ascending: true }),
-		supabase
-			.from('habit_checks')
-			.select('id, habit_id, check_date')
-			.gte('check_date', checkSince),
+		supabase.from('habit_checks').select('id, habit_id, check_date').gte('check_date', checkSince),
 		supabase.from('categories').select('id, name, parent_id, color').order('name'),
 		supabase.from('budgets').select('category_id, amount, period'),
 		supabase
@@ -123,14 +122,8 @@ export async function loadHotData(
 			.order('name', { ascending: true }),
 		supabase
 			.from('projects')
-			.select('id, owner_id, parent_id, name, description, status, color, updated_at')
+			.select('id, owner_id, parent_id, name, description, body_html, status, color, updated_at')
 			.order('name', { ascending: true }),
-		supabase
-			.from('project_items')
-			.select(
-				'id, project_id, parent_item_id, order_index, title, notes, done_at, custom'
-			)
-			.order('order_index', { ascending: true }),
 		supabase
 			.from('datasets')
 			.select('id, owner_id, name, columns, updated_at')
@@ -138,7 +131,7 @@ export async function loadHotData(
 		supabase
 			.from('shopping_items')
 			.select(
-				'id, owner_id, name, status, restock_period, last_purchased_at, notes, custom, updated_at'
+				'id, owner_id, name, status, restock_period, last_purchased_at, color, notes, custom, updated_at'
 			)
 			.is('archived_at', null)
 			.order('name', { ascending: true }),
@@ -151,7 +144,21 @@ export async function loadHotData(
 		supabase
 			.from('activity_logs')
 			.select('id, activity_id, log_date')
-			.gte('log_date', activityLogSince)
+			.gte('log_date', activityLogSince),
+		supabase
+			.from('recipes')
+			.select('id, owner_id, name, description, ingredients_html, method_html, custom, updated_at')
+			.is('archived_at', null)
+			.order('name', { ascending: true }),
+		supabase
+			.from('checklists')
+			.select('id, owner_id, name, updated_at')
+			.is('archived_at', null)
+			.order('name', { ascending: true }),
+		supabase
+			.from('checklist_items')
+			.select('id, checklist_id, title, checked, order_index')
+			.order('order_index', { ascending: true })
 	]);
 
 	return {
@@ -168,11 +175,13 @@ export async function loadHotData(
 		recentTransactions: recentTransactions ?? [],
 		assets: assets ?? [],
 		projects: projects ?? [],
-		projectItems: projectItems ?? [],
 		datasets: datasets ?? [],
 		shoppingItems: shoppingItems ?? [],
 		activities: activities ?? [],
 		activityLogs: activityLogs ?? [],
+		recipes: recipes ?? [],
+		checklists: checklists ?? [],
+		checklistItems: checklistItems ?? [],
 		hydratedAt: Date.now()
 	};
 }

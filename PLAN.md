@@ -29,7 +29,10 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 - `journal_entries`, `sleep_logs`, `tasks`, `habits`, `habit_checks`
 - `transactions`, `categories(rules jsonb)`, `budgets`
 - `assets`, `net_worth_snapshots`
-- `projects`, `project_items`
+- `projects` (rich-text `body_html` body — `project_items` was scrapped)
+- `recipes`, `recipe_versions`
+- `checklists`, `checklist_items`
+- `shopping_items` (with palette `color`)
 
 **Meta**
 
@@ -80,7 +83,7 @@ SvelteKit PWA → SvelteKit server routes (Supabase + Anthropic) → Postgres (R
 
 - `assets` (doubles as household inventory)
 - `net_worth_snapshots` + charts
-- `projects` + `project_items` with nesting
+- `projects` with nesting + rich-text `body_html` (replaces `project_items`)
 
 ### M6 — Datasets
 

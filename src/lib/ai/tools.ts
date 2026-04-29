@@ -344,7 +344,7 @@ export function createTools(supabase: TypedClient, userId: string) {
 		betaZodTool({
 			name: 'list_datasets',
 			description:
-				'List the user\'s datasets with id, name, and column definitions. Use this to find a dataset_id before adding rows.',
+				"List the user's datasets with id, name, and column definitions. Use this to find a dataset_id before adding rows.",
 			inputSchema: z.object({}),
 			run: async () => {
 				const { data, error } = await supabase
@@ -359,7 +359,7 @@ export function createTools(supabase: TypedClient, userId: string) {
 		betaZodTool({
 			name: 'add_dataset_row',
 			description:
-				'Append a row to a dataset. `data` is a map of column key → value; only keys that match the dataset\'s columns are stored. Call list_datasets first to find the right dataset_id and column keys.',
+				"Append a row to a dataset. `data` is a map of column key → value; only keys that match the dataset's columns are stored. Call list_datasets first to find the right dataset_id and column keys.",
 			inputSchema: z.object({
 				dataset_id: z.string().uuid(),
 				name: z.string().default(''),

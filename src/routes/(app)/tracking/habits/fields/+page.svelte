@@ -7,7 +7,7 @@
 
 <section class="mx-auto max-w-2xl space-y-4">
 	<div class="flex items-center gap-2">
-		<BackButton href="/habits" />
+		<BackButton href="/tracking/habits" />
 		<span class="text-xs tracking-widest text-muted-foreground uppercase">Habits</span>
 	</div>
 	<header class="space-y-1">

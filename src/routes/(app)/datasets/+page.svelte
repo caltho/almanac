@@ -65,7 +65,8 @@
 						<Database class="size-4 text-muted-foreground" />
 						<span class="font-medium">{d.name}</span>
 						<Badge variant="secondary" class="ml-auto text-[10px]">
-							{cols.length} {cols.length === 1 ? 'col' : 'cols'}
+							{cols.length}
+							{cols.length === 1 ? 'col' : 'cols'}
 						</Badge>
 					</div>
 					{#if cols.length > 0}

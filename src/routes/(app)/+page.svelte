@@ -73,7 +73,7 @@
 		const wasTicked = userData.habitTickedOn(habit_id, today);
 		userData.toggleHabitCheck(habit_id, today, !wasTicked);
 		try {
-			const res = await fetch('/habits/api', {
+			const res = await fetch('/tracking/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'toggle', habit_id, check_date: today, done: !wasTicked })
@@ -99,12 +99,12 @@
 					<Repeat class="size-4" />
 					<Card.Title class="text-base">Today's habits</Card.Title>
 				</div>
-				<Button href="/habits" variant="ghost" size="sm">All</Button>
+				<Button href="/tracking/habits" variant="ghost" size="sm">All</Button>
 			</Card.Header>
 			<Card.Content>
 				{#if userData.habits.length === 0}
 					<p class="text-sm text-muted-foreground">
-						No habits yet. <a class="underline" href="/habits">Add one</a>.
+						No habits yet. <a class="underline" href="/tracking/habits">Add one</a>.
 					</p>
 				{:else}
 					<ul class="space-y-1">

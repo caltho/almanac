@@ -2,11 +2,15 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import Plus from '@lucide/svelte/icons/plus';
 	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import Bell from '@lucide/svelte/icons/bell';
 	import Check from '@lucide/svelte/icons/check';
 	import Archive from '@lucide/svelte/icons/archive';
+	import ColorPicker from '$lib/components/ColorPicker.svelte';
+	import ColorDot from '$lib/components/ColorDot.svelte';
+	import { paletteHex, paletteLabel, type PaletteToken } from '$lib/palette';
 	import { useUserData, type ShoppingItem } from '$lib/stores/userData.svelte';
 	import {
 		PERIOD_LABELS,
@@ -23,10 +27,9 @@
 
 	const userData = useUserData();
 	let showNew = $state(false);
+	let newColor = $state<PaletteToken | null>(null);
 	let busy = $state<Record<string, boolean>>({});
 
-	// Annotate every item with its derived visual state + a numeric "overdue
-	// score" we sort by inside the Reminder section.
 	type Annotated = {
 		item: ShoppingItem;
 		visual: ShoppingVisual;
@@ -50,25 +53,36 @@
 		const reminder = annotated
 			.filter((a) => a.visual === 'reminder')
 			.slice()
-			.sort(
-				(a, b) =>
-					(a.nextAt?.getTime() ?? Infinity) - (b.nextAt?.getTime() ?? Infinity)
-			);
-		// Stocked: oldest purchase first (closest to needing restock).
+			.sort((a, b) => (a.nextAt?.getTime() ?? Infinity) - (b.nextAt?.getTime() ?? Infinity));
 		const stocked = annotated
 			.filter((a) => a.visual === 'stocked')
 			.slice()
 			.sort((a, b) => {
-				const at = a.item.last_purchased_at
-					? new Date(a.item.last_purchased_at).getTime()
-					: 0;
-				const bt = b.item.last_purchased_at
-					? new Date(b.item.last_purchased_at).getTime()
-					: 0;
+				const at = a.item.last_purchased_at ? new Date(a.item.last_purchased_at).getTime() : 0;
+				const bt = b.item.last_purchased_at ? new Date(b.item.last_purchased_at).getTime() : 0;
 				return at - bt;
 			});
 		return { buy, reminder, stocked };
 	});
+
+	// Sub-group annotated rows by color token within their status section.
+	// Order within a colour group preserves the section's primary order.
+	function colorGroups(rows: Annotated[]) {
+		const map = new Map<string, Annotated[]>();
+		for (const r of rows) {
+			const key = r.item.color ?? '__none';
+			if (!map.has(key)) map.set(key, []);
+			map.get(key)!.push(r);
+		}
+		// Stable color order: keyed groups first (palette order), uncoloured last.
+		const order = ['slate', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple'];
+		const out: { token: string | null; rows: Annotated[] }[] = [];
+		for (const tok of order) {
+			if (map.has(tok)) out.push({ token: tok, rows: map.get(tok)! });
+		}
+		if (map.has('__none')) out.push({ token: null, rows: map.get('__none')! });
+		return out;
+	}
 
 	async function setStatus(item: ShoppingItem, next: ShoppingStatus) {
 		busy[item.id] = true;
@@ -78,7 +92,7 @@
 		userData.updateShoppingItem(item.id, optimistic);
 
 		try {
-			const res = await fetch('/tasks/shopping/api', {
+			const res = await fetch('/food/shopping/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setStatus', id: item.id, status: next })
@@ -93,15 +107,8 @@
 		}
 	}
 
-	/**
-	 * Click handler on the multi-state status button. Cycles:
-	 *   Buy       → Stocked (server stamps last_purchased_at)
-	 *   Stocked   → Buy
-	 *   Reminder  → Stocked (re-stamps last_purchased_at — a fresh restock cycle)
-	 */
 	function cycleStatus(a: Annotated) {
 		if (a.visual === 'buy') return setStatus(a.item, 'stocked');
-		// Stocked or Reminder → flip target depends on visual.
 		if (a.visual === 'reminder') return setStatus(a.item, 'stocked');
 		return setStatus(a.item, 'buy');
 	}
@@ -110,12 +117,27 @@
 		const prev = { ...item };
 		userData.updateShoppingItem(item.id, { restock_period: period });
 		try {
-			const res = await fetch('/tasks/shopping/api', {
+			const res = await fetch('/food/shopping/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setPeriod', id: item.id, restock_period: period })
 			});
 			if (!res.ok) throw new Error(await res.text());
+		} catch {
+			userData.updateShoppingItem(item.id, prev);
+		}
+	}
+
+	async function setColor(item: ShoppingItem, color: PaletteToken | null) {
+		const prev = { ...item };
+		userData.updateShoppingItem(item.id, { color });
+		try {
+			const res = await fetch('/food/shopping/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'setColor', id: item.id, color })
+			});
+			if (!res.ok) throw new Error();
 		} catch {
 			userData.updateShoppingItem(item.id, prev);
 		}
@@ -141,9 +163,7 @@
 
 	function nextDueLabel(a: Annotated): string {
 		if (!a.nextAt) return '';
-		return a.visual === 'reminder'
-			? `Due ${relativeDays(a.nextAt)}`
-			: `Due ${relativeDays(a.nextAt)}`;
+		return `Due ${relativeDays(a.nextAt)}`;
 	}
 </script>
 
@@ -167,22 +187,31 @@
 		use:enhance={() =>
 			async ({ update, result }) => {
 				await update({ reset: true });
-				if (result.type === 'success') showNew = false;
+				if (result.type === 'success') {
+					showNew = false;
+					newColor = null;
+				}
 			}}
-		class="grid gap-3 rounded-lg border bg-muted/20 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-end"
+		class="space-y-3 rounded-lg border bg-muted/20 p-4"
 	>
-		<Input name="name" placeholder="What do you need to buy?" required autofocus />
-		<select
-			name="restock_period"
-			class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs sm:w-36"
-		>
-			{#each SHOPPING_PERIODS as p (p)}
-				<option value={p} selected={p === 'monthly'}>{PERIOD_LABELS[p]}</option>
-			{/each}
-		</select>
-		<Button type="submit">Add</Button>
+		<div class="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+			<Input name="name" placeholder="What do you need to buy?" required autofocus />
+			<select
+				name="restock_period"
+				class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs sm:w-36"
+			>
+				{#each SHOPPING_PERIODS as p (p)}
+					<option value={p} selected={p === 'monthly'}>{PERIOD_LABELS[p]}</option>
+				{/each}
+			</select>
+			<Button type="submit">Add</Button>
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-xs">Color group</Label>
+			<ColorPicker bind:value={newColor} name="color" label="Color group" />
+		</div>
 		{#if form?.error}
-			<p class="col-span-full text-sm text-destructive">{form.error}</p>
+			<p class="text-sm text-destructive">{form.error}</p>
 		{/if}
 	</form>
 {/if}
@@ -204,11 +233,7 @@
 				<ShoppingCart class="size-3.5" />
 				Buy at next shop · {grouped.buy.length}
 			</h3>
-			<ul class="divide-y divide-border rounded-lg border">
-				{#each grouped.buy as a (a.item.id)}
-					{@render row(a)}
-				{/each}
-			</ul>
+			{@render coloredList(colorGroups(grouped.buy), '')}
 		</section>
 	{/if}
 
@@ -221,50 +246,80 @@
 				<Bell class="size-3.5" />
 				Reminder · {grouped.reminder.length}
 			</h3>
-			<ul
-				class="divide-y divide-border rounded-lg border border-amber-300/60 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5"
-			>
-				{#each grouped.reminder as a (a.item.id)}
-					{@render row(a)}
-				{/each}
-			</ul>
+			{@render coloredList(
+				colorGroups(grouped.reminder),
+				'border-amber-300/60 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5'
+			)}
 		</section>
 	{/if}
 
-	<!-- Stocked, sorted by last-purchased ascending -->
+	<!-- Stocked -->
 	{#if grouped.stocked.length > 0}
 		<section class="space-y-2">
-			<h3 class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+			<h3
+				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+			>
 				<Check class="size-3.5" />
 				Stocked · {grouped.stocked.length}
 			</h3>
-			<ul class="divide-y divide-border rounded-lg border">
-				{#each grouped.stocked as a (a.item.id)}
-					{@render row(a)}
-				{/each}
-			</ul>
+			{@render coloredList(colorGroups(grouped.stocked), '')}
 		</section>
 	{/if}
 {/if}
+
+{#snippet coloredList(groups: { token: string | null; rows: Annotated[] }[], extraClass: string)}
+	<div class="space-y-3">
+		{#each groups as g (g.token ?? '__none')}
+			{@const hex = paletteHex(g.token)}
+			{#if groups.length > 1 && g.token}
+				<div
+					class="flex items-center gap-2 px-1 text-[10px] tracking-widest text-muted-foreground uppercase"
+				>
+					<span class="size-2 rounded-full" style={`background:${hex}`} aria-hidden="true"></span>
+					{paletteLabel(g.token)}
+				</div>
+			{:else if groups.length > 1 && !g.token}
+				<div class="px-1 text-[10px] tracking-widest text-muted-foreground uppercase">
+					Ungrouped
+				</div>
+			{/if}
+			<ul class={`divide-y divide-border rounded-lg border ${extraClass}`}>
+				{#each g.rows as a (a.item.id)}
+					{@render row(a)}
+				{/each}
+			</ul>
+		{/each}
+	</div>
+{/snippet}
 
 {#snippet row(a: Annotated)}
 	{@const item = a.item}
 	{@const v = a.visual}
 	<li class="grid grid-cols-[1fr_auto] items-center gap-3 p-3 sm:grid-cols-[1fr_auto_auto]">
 		<div class="min-w-0 space-y-1">
-			<div class="font-medium">{item.name}</div>
+			<div class="flex items-center gap-2 font-medium">
+				<ColorDot token={item.color} />
+				{item.name}
+			</div>
 			<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
 				<span>{lastPurchasedLabel(item.last_purchased_at)}</span>
 				{#if item.last_purchased_at && v !== 'buy'}
 					<span aria-hidden="true">·</span>
 					<span>{nextDueLabel(a)}</span>
 				{/if}
+				<span aria-hidden="true">·</span>
+				<ColorPicker
+					value={(item.color as PaletteToken | null) ?? null}
+					onchange={(c) => setColor(item, c)}
+					label="Color group"
+				/>
 			</div>
 		</div>
 
 		<select
 			value={item.restock_period}
-			onchange={(e) => setPeriod(item, (e.currentTarget as HTMLSelectElement).value as ShoppingPeriod)}
+			onchange={(e) =>
+				setPeriod(item, (e.currentTarget as HTMLSelectElement).value as ShoppingPeriod)}
 			class="hidden h-8 rounded-md border border-input bg-background px-2 text-xs shadow-xs sm:flex"
 			aria-label="Restock period"
 		>
@@ -279,14 +334,12 @@
 				size="sm"
 				variant={v === 'stocked' ? 'outline' : 'default'}
 				disabled={busy[item.id]}
-				title={
-					v === 'buy'
-						? 'Click when bought'
-						: v === 'reminder'
-							? 'Click when restocked'
-							: 'Click to add to next shop'
-				}
-				class={`gap-1.5 min-w-[10rem] ${
+				title={v === 'buy'
+					? 'Click when bought'
+					: v === 'reminder'
+						? 'Click when restocked'
+						: 'Click to add to next shop'}
+				class={`min-w-[10rem] gap-1.5 ${
 					v === 'reminder'
 						? 'bg-amber-500 text-white hover:bg-amber-600 focus-visible:ring-amber-500'
 						: ''

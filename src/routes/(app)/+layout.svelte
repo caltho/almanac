@@ -132,7 +132,7 @@
 		</nav>
 	</header>
 
-	<main class="mx-auto max-w-5xl px-4 py-8">
+	<main class="mx-auto max-w-5xl space-y-6 px-4 py-6">
 		{@render children()}
 	</main>
 </div>

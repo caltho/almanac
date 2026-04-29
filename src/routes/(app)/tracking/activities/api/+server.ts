@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { isPaletteToken } from '$lib/palette';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ACTIVITY_SELECT = 'id, owner_id, name, color, order_index, updated_at';
@@ -13,8 +14,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) throw error(401);
 	const body = (await request.json()) as
 		| { op: 'toggle'; activity_id: string; log_date: string; on: boolean }
-		| { op: 'create'; name: string; color?: string }
+		| { op: 'create'; name: string; color?: string | null }
 		| { op: 'rename'; id: string; name: string }
+		| { op: 'setColor'; id: string; color: string | null }
 		| { op: 'archive'; id: string };
 
 	if (body.op === 'toggle') {
@@ -31,7 +33,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				})
 				.select('id, activity_id, log_date')
 				.single();
-			// 23505 = unique-violation. Already logged is success.
 			if (e && e.code !== '23505') throw error(500, e.message);
 			if (!data) {
 				const { data: existing } = await locals.supabase
@@ -56,7 +57,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (body.op === 'create') {
 		const name = (body.name ?? '').trim();
 		if (!name) throw error(400, 'Empty name');
-		// Append to end of the order list.
+		const color = body.color && isPaletteToken(body.color) ? body.color : null;
 		const { data: last } = await locals.supabase
 			.from('activities')
 			.select('order_index')
@@ -70,7 +71,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.insert({
 				owner_id: locals.user.id,
 				name,
-				color: body.color ?? null,
+				color,
 				order_index: (last?.order_index ?? -1) + 1
 			})
 			.select(ACTIVITY_SELECT)
@@ -85,6 +86,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const { error: e } = await locals.supabase
 			.from('activities')
 			.update({ name })
+			.eq('id', body.id);
+		if (e) throw error(500, e.message);
+		return json({ ok: true });
+	}
+
+	if (body.op === 'setColor') {
+		if (!body.id) throw error(400, 'Missing id');
+		const color = body.color && isPaletteToken(body.color) ? body.color : null;
+		const { error: e } = await locals.supabase
+			.from('activities')
+			.update({ color })
 			.eq('id', body.id);
 		if (e) throw error(500, e.message);
 		return json({ ok: true });

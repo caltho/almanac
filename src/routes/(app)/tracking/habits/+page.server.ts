@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 
 // Data flows through (app)/+layout.server.ts → userData store. Actions stay
-// for plain-form fallbacks; the JS path uses /habits/api for instant
+// for plain-form fallbacks; the JS path uses /tracking/habits/api for instant
 // optimistic updates.
 
 export const actions: Actions = {
@@ -28,7 +28,6 @@ export const actions: Actions = {
 			return fail(400, { error: 'Bad input.' });
 		}
 
-		// Attempt delete; if nothing removed, insert a check.
 		const del = await locals.supabase
 			.from('habit_checks')
 			.delete()

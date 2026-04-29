@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/state';
+
 	let { children } = $props();
 
 	const tabs = [
-		{ href: '/tasks', label: 'Tasks' },
-		{ href: '/tasks/checklists', label: 'Checklists' }
+		{ href: '/food/shopping', label: 'Shopping' },
+		{ href: '/food/recipes', label: 'Recipes' }
 	];
 
 	function isActive(href: string) {
-		if (href === '/tasks') return page.url.pathname === '/tasks';
 		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
 	}
 </script>

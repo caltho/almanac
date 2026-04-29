@@ -2,10 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { ShoppingPeriod, ShoppingStatus } from '$lib/shopping';
 import { SHOPPING_PERIODS } from '$lib/shopping';
+import { isPaletteToken } from '$lib/palette';
 
 const VALID_STATUSES: ShoppingStatus[] = ['buy', 'stocked'];
 const SELECT =
-	'id, owner_id, name, status, restock_period, last_purchased_at, notes, custom, updated_at';
+	'id, owner_id, name, status, restock_period, last_purchased_at, color, notes, custom, updated_at';
 
 function isValidPeriod(v: string): v is ShoppingPeriod {
 	return (SHOPPING_PERIODS as readonly string[]).includes(v);
@@ -15,17 +16,17 @@ function isValidPeriod(v: string): v is ShoppingPeriod {
  * JSON endpoints for the shopping list — paired with optimistic client-side
  * updates in +page.svelte. Status flips to 'stocked' explicitly stamp
  * last_purchased_at = now() so successive "Reminder → Stocked" clicks
- * refresh the timer. (The DB trigger only stamps if last_purchased_at is
- * null, so the explicit write is needed for re-stocks.)
+ * refresh the timer.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) throw error(401);
 	const body = (await request.json()) as {
-		op: 'setStatus' | 'setPeriod' | 'rename';
+		op: 'setStatus' | 'setPeriod' | 'rename' | 'setColor';
 		id: string;
 		status?: ShoppingStatus;
 		restock_period?: ShoppingPeriod;
 		name?: string;
+		color?: string | null;
 	};
 
 	if (!body.id) throw error(400, 'Missing id');
@@ -57,6 +58,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const { data, error: e } = await locals.supabase
 			.from('shopping_items')
 			.update({ restock_period: body.restock_period })
+			.eq('id', body.id)
+			.select(SELECT)
+			.single();
+		if (e) throw error(500, e.message);
+		return json({ ok: true, item: data });
+	}
+
+	if (body.op === 'setColor') {
+		const color = body.color && isPaletteToken(body.color) ? body.color : null;
+		const { data, error: e } = await locals.supabase
+			.from('shopping_items')
+			.update({ color })
 			.eq('id', body.id)
 			.select(SELECT)
 			.single();

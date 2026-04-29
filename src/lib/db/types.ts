@@ -243,6 +243,71 @@ export type Database = {
           },
         ]
       }
+      checklist_items: {
+        Row: {
+          checked: boolean
+          checklist_id: string
+          created_at: string
+          id: string
+          order_index: number
+          owner_id: string
+          title: string
+        }
+        Insert: {
+          checked?: boolean
+          checklist_id: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          owner_id: string
+          title: string
+        }
+        Update: {
+          checked?: boolean
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          owner_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklists: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custom_attribute_defs: {
         Row: {
           created_at: string
@@ -629,65 +694,9 @@ export type Database = {
         }
         Relationships: []
       }
-      project_items: {
-        Row: {
-          created_at: string
-          custom: Json
-          done_at: string | null
-          id: string
-          notes: string | null
-          order_index: number
-          owner_id: string
-          parent_item_id: string | null
-          project_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          custom?: Json
-          done_at?: string | null
-          id?: string
-          notes?: string | null
-          order_index?: number
-          owner_id: string
-          parent_item_id?: string | null
-          project_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          custom?: Json
-          done_at?: string | null
-          id?: string
-          notes?: string | null
-          order_index?: number
-          owner_id?: string
-          parent_item_id?: string | null
-          project_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_items_parent_item_id_fkey"
-            columns: ["parent_item_id"]
-            isOneToOne: false
-            referencedRelation: "project_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_items_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       projects: {
         Row: {
+          body_html: string
           color: string | null
           created_at: string
           custom: Json
@@ -700,6 +709,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          body_html?: string
           color?: string | null
           created_at?: string
           custom?: Json
@@ -712,6 +722,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          body_html?: string
           color?: string | null
           created_at?: string
           custom?: Json
@@ -732,6 +743,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      recipe_versions: {
+        Row: {
+          created_at: string
+          id: string
+          ingredients_html: string
+          method_html: string
+          notes: string | null
+          owner_id: string
+          recipe_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredients_html?: string
+          method_html?: string
+          notes?: string | null
+          owner_id: string
+          recipe_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredients_html?: string
+          method_html?: string
+          notes?: string | null
+          owner_id?: string
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_versions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          custom: Json
+          description: string | null
+          id: string
+          ingredients_html: string
+          method_html: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          custom?: Json
+          description?: string | null
+          id?: string
+          ingredients_html?: string
+          method_html?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          custom?: Json
+          description?: string | null
+          id?: string
+          ingredients_html?: string
+          method_html?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       shares: {
         Row: {
@@ -772,6 +860,7 @@ export type Database = {
       shopping_items: {
         Row: {
           archived_at: string | null
+          color: string | null
           created_at: string
           custom: Json
           id: string
@@ -785,6 +874,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          color?: string | null
           created_at?: string
           custom?: Json
           id?: string
@@ -798,6 +888,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          color?: string | null
           created_at?: string
           custom?: Json
           id?: string
