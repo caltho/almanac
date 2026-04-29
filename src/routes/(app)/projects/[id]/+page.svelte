@@ -10,8 +10,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsEditor } from '$lib/custom-attrs';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
-	import ColorPicker from '$lib/components/ColorPicker.svelte';
+	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
 	import ColorDot from '$lib/components/ColorDot.svelte';
+	import OptionTrigger from '$lib/components/OptionTrigger.svelte';
 	import BackButton from '$lib/components/BackButton.svelte';
 	import { type PaletteToken } from '$lib/palette';
 	import Save from '@lucide/svelte/icons/save';
@@ -38,7 +39,44 @@
 		(form && 'fieldErrors' in form ? (form.fieldErrors as Record<string, string>) : {}) ?? {}
 	);
 
-	const STATUSES = ['active', 'done', 'archived'] as const;
+	const STATUS_OPTIONS = [
+		{ value: 'active', label: 'Active' },
+		{ value: 'done', label: 'Done' },
+		{ value: 'archived', label: 'Archived' }
+	];
+
+	// Direct-manipulation handlers — color and status flip immediately via the
+	// /api endpoint. They sit outside the main edit form so the user doesn't
+	// need to open "Edit mode" just to recolour or close out a project.
+	async function setColor(next: PaletteToken | null) {
+		const prev = color;
+		color = next;
+		try {
+			const res = await fetch(`/projects/${data.project.id}/api`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'setColor', color: next })
+			});
+			if (!res.ok) throw new Error();
+		} catch {
+			color = prev;
+		}
+	}
+
+	async function setStatus(next: string) {
+		const prev = status;
+		status = next;
+		try {
+			const res = await fetch(`/projects/${data.project.id}/api`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'setStatus', status: next })
+			});
+			if (!res.ok) throw new Error();
+		} catch {
+			status = prev;
+		}
+	}
 </script>
 
 <section class="space-y-6">
@@ -74,50 +112,39 @@
 		}}
 		class="space-y-5"
 	>
-		<header class="space-y-3">
+		<header class="space-y-2">
+			<div class="flex items-center gap-2">
+				<ColorTrigger value={color} onchange={setColor} size="md" label="Change project color" />
+				{#if editing}
+					<Input
+						name="name"
+						bind:value={name}
+						required
+						class="flex-1 text-2xl font-semibold tracking-tight"
+					/>
+				{:else}
+					<h1 class="min-w-0 flex-1 truncate text-2xl font-semibold tracking-tight">
+						{data.project.name}
+					</h1>
+				{/if}
+				<OptionTrigger
+					value={status}
+					options={STATUS_OPTIONS}
+					onchange={setStatus}
+					label="Change project status"
+				/>
+				{#if data.canEdit && !editing}
+					<Button size="sm" variant="outline" onclick={() => (editing = true)}>Edit</Button>
+				{/if}
+			</div>
+
 			{#if editing}
-				<div class="grid gap-3 sm:grid-cols-[2fr_auto] sm:items-end">
-					<div class="space-y-1.5">
-						<Label class="text-xs">Name</Label>
-						<Input name="name" bind:value={name} required class="text-lg font-semibold" />
-					</div>
-					<div class="space-y-1.5">
-						<Label class="text-xs">Status</Label>
-						<select
-							name="status"
-							bind:value={status}
-							class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
-						>
-							{#each STATUSES as s (s)}
-								<option value={s}>{s}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
 				<div class="space-y-1.5">
 					<Label class="text-xs">Description</Label>
 					<Textarea name="description" rows={2} bind:value={description} />
 				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Color</Label>
-					<ColorPicker bind:value={color} name="color" label="Project color" />
-				</div>
-			{:else}
-				<div class="flex items-center justify-between gap-3">
-					<div class="min-w-0 space-y-1">
-						<h1 class="flex min-w-0 items-center gap-2 text-2xl font-semibold tracking-tight">
-							<ColorDot token={data.project.color} size="md" />
-							<span class="truncate">{data.project.name}</span>
-							<Badge variant="secondary" class="ml-1 capitalize">{data.project.status}</Badge>
-						</h1>
-						{#if data.project.description}
-							<p class="text-sm text-muted-foreground">{data.project.description}</p>
-						{/if}
-					</div>
-					{#if data.canEdit}
-						<Button size="sm" variant="outline" onclick={() => (editing = true)}>Edit</Button>
-					{/if}
-				</div>
+			{:else if data.project.description}
+				<p class="text-sm text-muted-foreground">{data.project.description}</p>
 			{/if}
 		</header>
 

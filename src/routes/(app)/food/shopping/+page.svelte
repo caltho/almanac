@@ -9,7 +9,8 @@
 	import Check from '@lucide/svelte/icons/check';
 	import Archive from '@lucide/svelte/icons/archive';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
-	import ColorDot from '$lib/components/ColorDot.svelte';
+	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
+	import OptionTrigger from '$lib/components/OptionTrigger.svelte';
 	import { paletteHex, paletteLabel, type PaletteToken } from '$lib/palette';
 	import { useUserData, type ShoppingItem } from '$lib/stores/userData.svelte';
 	import {
@@ -295,38 +296,30 @@
 {#snippet row(a: Annotated)}
 	{@const item = a.item}
 	{@const v = a.visual}
-	<li class="grid grid-cols-[1fr_auto] items-center gap-3 p-3 sm:grid-cols-[1fr_auto_auto]">
-		<div class="min-w-0 space-y-1">
-			<div class="flex items-center gap-2 font-medium">
-				<ColorDot token={item.color} />
-				{item.name}
-			</div>
-			<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+	<li class="flex items-center gap-3 p-3">
+		<ColorTrigger
+			value={(item.color as PaletteToken | null) ?? null}
+			onchange={(c) => setColor(item, c)}
+			label="Change color group"
+		/>
+
+		<div class="min-w-0 flex-1 space-y-0.5">
+			<div class="font-medium">{item.name}</div>
+			<div class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-muted-foreground">
 				<span>{lastPurchasedLabel(item.last_purchased_at)}</span>
 				{#if item.last_purchased_at && v !== 'buy'}
 					<span aria-hidden="true">·</span>
 					<span>{nextDueLabel(a)}</span>
 				{/if}
 				<span aria-hidden="true">·</span>
-				<ColorPicker
-					value={(item.color as PaletteToken | null) ?? null}
-					onchange={(c) => setColor(item, c)}
-					label="Color group"
+				<OptionTrigger
+					value={item.restock_period}
+					options={SHOPPING_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
+					onchange={(next) => setPeriod(item, next as ShoppingPeriod)}
+					label="Change restock period"
 				/>
 			</div>
 		</div>
-
-		<select
-			value={item.restock_period}
-			onchange={(e) =>
-				setPeriod(item, (e.currentTarget as HTMLSelectElement).value as ShoppingPeriod)}
-			class="hidden h-8 rounded-md border border-input bg-background px-2 text-xs shadow-xs sm:flex"
-			aria-label="Restock period"
-		>
-			{#each SHOPPING_PERIODS as p (p)}
-				<option value={p}>{PERIOD_LABELS[p]}</option>
-			{/each}
-		</select>
 
 		<div class="flex items-center gap-1">
 			<Button

@@ -8,7 +8,8 @@
 	import Activity from '@lucide/svelte/icons/activity';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Archive from '@lucide/svelte/icons/archive';
-	import ColorDot from '$lib/components/ColorDot.svelte';
+	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
+	import type { PaletteToken } from '$lib/palette';
 	import {
 		useUserData,
 		type Activity as ActivityRow,
@@ -112,6 +113,24 @@
 			userData.addActivity(activity);
 		}
 	}
+
+	async function setColor(activity: ActivityRow, color: PaletteToken | null) {
+		const prev = activity.color;
+		// Optimistic: patch the activity in-store. activities helper has no
+		// `updateActivity`, so we splice manually.
+		const i = userData.activities.findIndex((a) => a.id === activity.id);
+		if (i >= 0) userData.activities[i] = { ...userData.activities[i], color };
+		try {
+			const res = await fetch('/tracking/activities/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'setColor', id: activity.id, color })
+			});
+			if (!res.ok) throw new Error();
+		} catch {
+			if (i >= 0) userData.activities[i] = { ...userData.activities[i], color: prev };
+		}
+	}
 </script>
 
 <header class="space-y-1">
@@ -151,14 +170,18 @@
 			>
 				{#each due as a (a.id)}
 					<li animate:flip={{ duration: 350 }} class="flex items-center gap-3 p-3">
+						<ColorTrigger
+							value={(a.color as PaletteToken | null) ?? null}
+							onchange={(c) => setColor(a, c)}
+							label="Change activity color"
+						/>
 						<button
 							type="button"
 							onclick={() => toggle(a)}
-							class="flex min-w-0 flex-1 items-center gap-2 text-left"
+							class="min-w-0 flex-1 text-left font-medium"
 							disabled={busy[a.id]}
 						>
-							<ColorDot token={a.color} />
-							<span class="font-medium">{a.name}</span>
+							{a.name}
 						</button>
 						<Button onclick={() => toggle(a)} size="sm" class="gap-1.5" disabled={busy[a.id]}>
 							<Check class="size-3.5" />
@@ -192,14 +215,18 @@
 				{#each done as a (a.id)}
 					{@const burstHere = burst.has(a.id)}
 					<li animate:flip={{ duration: 350 }} class="relative flex items-center gap-3 p-3">
+						<ColorTrigger
+							value={(a.color as PaletteToken | null) ?? null}
+							onchange={(c) => setColor(a, c)}
+							label="Change activity color"
+						/>
 						<button
 							type="button"
 							onclick={() => toggle(a)}
-							class="flex min-w-0 flex-1 items-center gap-2 text-left opacity-90"
+							class="min-w-0 flex-1 text-left font-medium opacity-90"
 							disabled={busy[a.id]}
 						>
-							<ColorDot token={a.color} />
-							<span class="font-medium">{a.name}</span>
+							{a.name}
 						</button>
 						<Button
 							onclick={() => toggle(a)}
