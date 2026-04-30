@@ -3,13 +3,17 @@
 	let { children } = $props();
 
 	const tabs = [
-		{ href: '/assets', label: 'Stuff' },
-		{ href: '/assets/net-worth', label: 'Net worth' }
+		{ href: '/projects', label: 'Projects' },
+		{ href: '/projects/datasets', label: 'Datasets' }
 	];
 
 	function isActive(href: string) {
-		if (href === '/assets') return page.url.pathname === '/assets';
-		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+		const path = page.url.pathname;
+		if (href === '/projects') {
+			if (path.startsWith('/projects/datasets')) return false;
+			return path === '/projects' || path.startsWith('/projects/');
+		}
+		return path === href || path.startsWith(href + '/');
 	}
 </script>
 
@@ -32,5 +36,6 @@
 			{/each}
 		</ul>
 	</nav>
+
 	{@render children()}
 </section>

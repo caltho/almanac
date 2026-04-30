@@ -63,6 +63,6 @@ export const actions: Actions = {
 			.from('assets')
 			.update({ archived_at: new Date().toISOString() })
 			.eq('id', params.id);
-		throw redirect(303, '/assets');
+		throw redirect(303, '/finance/assets');
 	}
 };

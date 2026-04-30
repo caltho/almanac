@@ -22,6 +22,6 @@ export const actions: Actions = {
 			.single();
 
 		if (error) return fail(500, { error: error.message });
-		throw redirect(303, `/datasets/${data.id}`);
+		throw redirect(303, `/projects/datasets/${data.id}`);
 	}
 };

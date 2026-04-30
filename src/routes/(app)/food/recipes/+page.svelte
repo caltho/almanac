@@ -2,15 +2,21 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Plus from '@lucide/svelte/icons/plus';
 	import UtensilsCrossed from '@lucide/svelte/icons/utensils-crossed';
-	import { useUserData } from '$lib/stores/userData.svelte';
+	import MoreVertical from '@lucide/svelte/icons/more-vertical';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Check from '@lucide/svelte/icons/check';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { useUserData, type Recipe } from '$lib/stores/userData.svelte';
 
 	let { form } = $props();
 
 	const userData = useUserData();
 	let showNew = $state(false);
 	let creating = $state(false);
+	let editing = $state(false);
 
 	const recipes = $derived(userData.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -23,6 +29,19 @@
 			.trim()
 			.slice(0, 140);
 	}
+
+	async function deleteRecipe(r: Recipe) {
+		if (!confirm(`Delete "${r.name}"? This cannot be undone.`)) return;
+		userData.removeRecipe(r.id);
+		try {
+			const fd = new FormData();
+			fd.set('id', r.id);
+			const res = await fetch('?/archive', { method: 'POST', body: fd });
+			if (!res.ok) throw new Error();
+		} catch {
+			userData.addRecipe(r);
+		}
+	}
 </script>
 
 <header class="flex flex-wrap items-end justify-between gap-3">
@@ -33,10 +52,39 @@
 			out.
 		</p>
 	</div>
-	<Button size="sm" onclick={() => (showNew = !showNew)}>
-		<Plus class="size-4" />
-		<span>{showNew ? 'Close' : 'New recipe'}</span>
-	</Button>
+	<div class="flex items-center gap-1">
+		{#if editing}
+			<Button size="sm" onclick={() => (editing = false)}>
+				<Check class="size-4" />
+				Save
+			</Button>
+		{/if}
+		<Button size="sm" onclick={() => (showNew = !showNew)}>
+			<Plus class="size-4" />
+			<span>{showNew ? 'Close' : 'New recipe'}</span>
+		</Button>
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label="List actions"
+					>
+						<MoreVertical class="size-4" />
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="end" class="w-44">
+				<DropdownMenu.Item onclick={() => (editing = !editing)}>
+					<Pencil class="size-4" />
+					<span>{editing ? 'Done editing' : 'Edit'}</span>
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	</div>
 </header>
 
 {#if showNew}
@@ -72,7 +120,7 @@
 {:else}
 	<ul class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 		{#each recipes as r (r.id)}
-			<li>
+			<li class="relative">
 				<a
 					href={`/food/recipes/${r.id}`}
 					class="block h-full rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20"
@@ -87,6 +135,18 @@
 						</p>
 					{/if}
 				</a>
+				{#if editing}
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						class="absolute top-2 right-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+						aria-label="Delete recipe"
+						onclick={() => deleteRecipe(r)}
+					>
+						<Trash2 class="size-4" />
+					</Button>
+				{/if}
 			</li>
 		{/each}
 	</ul>

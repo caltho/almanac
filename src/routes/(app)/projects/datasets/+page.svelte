@@ -58,7 +58,7 @@
 			{@const cols = asColumns(d.columns)}
 			<li>
 				<a
-					href={`/datasets/${d.id}`}
+					href={`/projects/datasets/${d.id}`}
 					class="block rounded-md border p-4 transition-colors hover:bg-muted/30"
 				>
 					<div class="flex items-center gap-2">

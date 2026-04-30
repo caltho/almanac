@@ -93,7 +93,7 @@
 				<Button type="submit" variant="ghost" size="sm">Delete</Button>
 			</form>
 		{/if}
-		<Button variant="ghost" size="sm" href="/datasets">Back</Button>
+		<Button variant="ghost" size="sm" href="/projects/datasets">Back</Button>
 	</div>
 </header>
 

@@ -7,13 +7,21 @@
 		{ href: '/finance/transactions', label: 'Transactions' },
 		{ href: '/finance/categories', label: 'Categories' },
 		{ href: '/finance/budgets', label: 'Budgets' },
+		{ href: '/finance/assets', label: 'Stuff' },
+		{ href: '/finance/assets/net-worth', label: 'Net worth' },
 		{ href: '/finance/import', label: 'Import' },
 		{ href: '/finance/fields', label: 'Fields' }
 	];
 
 	function isActive(href: string) {
-		if (href === '/finance') return page.url.pathname === '/finance';
-		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+		const path = page.url.pathname;
+		if (href === '/finance') return path === '/finance';
+		// Stuff covers all of /finance/assets EXCEPT /finance/assets/net-worth.
+		if (href === '/finance/assets') {
+			if (path.startsWith('/finance/assets/net-worth')) return false;
+			return path === '/finance/assets' || path.startsWith('/finance/assets/');
+		}
+		return path === href || path.startsWith(href + '/');
 	}
 </script>
 

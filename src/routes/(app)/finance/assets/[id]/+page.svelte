@@ -36,7 +36,7 @@
 
 <section class="mx-auto max-w-2xl space-y-4">
 	<div class="flex items-center gap-2">
-		<BackButton href="/assets" />
+		<BackButton href="/finance/assets" />
 		<span class="text-xs tracking-widest text-muted-foreground uppercase">Stuff</span>
 	</div>
 

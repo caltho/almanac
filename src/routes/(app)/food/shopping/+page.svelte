@@ -7,7 +7,8 @@
 	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
 	import Bell from '@lucide/svelte/icons/bell';
 	import Check from '@lucide/svelte/icons/check';
-	import Archive from '@lucide/svelte/icons/archive';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
 	import OptionTrigger from '$lib/components/OptionTrigger.svelte';
@@ -30,6 +31,7 @@
 	let showNew = $state(false);
 	let newColor = $state<PaletteToken | null>(null);
 	let busy = $state<Record<string, boolean>>({});
+	let editing = $state(false);
 
 	type Annotated = {
 		item: ShoppingItem;
@@ -145,6 +147,7 @@
 	}
 
 	async function archive(item: ShoppingItem) {
+		if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
 		const prev = item;
 		userData.removeShoppingItem(item.id);
 		try {
@@ -175,10 +178,25 @@
 			What's on the next shop, plus the stuff you restock on a schedule.
 		</p>
 	</div>
-	<Button size="sm" onclick={() => (showNew = !showNew)}>
-		<Plus class="size-4" />
-		<span>{showNew ? 'Close' : 'Add item'}</span>
-	</Button>
+	<div class="flex items-center gap-1">
+		<Button size="sm" onclick={() => (showNew = !showNew)}>
+			<Plus class="size-4" />
+			<span>{showNew ? 'Close' : 'Add item'}</span>
+		</Button>
+		<Button
+			size="sm"
+			variant={editing ? 'default' : 'outline'}
+			onclick={() => (editing = !editing)}
+		>
+			{#if editing}
+				<Check class="size-4" />
+				<span>Done</span>
+			{:else}
+				<Pencil class="size-4" />
+				<span>Edit</span>
+			{/if}
+		</Button>
+	</div>
 </header>
 
 {#if showNew}
@@ -296,12 +314,25 @@
 {#snippet row(a: Annotated)}
 	{@const item = a.item}
 	{@const v = a.visual}
+	{@const hex = paletteHex((item.color as PaletteToken | null) ?? null)}
 	<li class="flex items-center gap-3 p-3">
-		<ColorTrigger
-			value={(item.color as PaletteToken | null) ?? null}
-			onchange={(c) => setColor(item, c)}
-			label="Change color group"
-		/>
+		{#if editing}
+			<ColorTrigger
+				value={(item.color as PaletteToken | null) ?? null}
+				onchange={(c) => setColor(item, c)}
+				label="Change color group"
+			/>
+		{:else}
+			<span class="inline-flex size-7 items-center justify-center" aria-hidden="true">
+				{#if hex}
+					<span class="size-3 rounded-full" style={`background:${hex}`}></span>
+				{:else}
+					<span
+						class="size-3 rounded-full border border-dashed border-muted-foreground/40"
+					></span>
+				{/if}
+			</span>
+		{/if}
 
 		<div class="min-w-0 flex-1 space-y-0.5">
 			<div class="font-medium">{item.name}</div>
@@ -312,12 +343,16 @@
 					<span>{nextDueLabel(a)}</span>
 				{/if}
 				<span aria-hidden="true">·</span>
-				<OptionTrigger
-					value={item.restock_period}
-					options={SHOPPING_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
-					onchange={(next) => setPeriod(item, next as ShoppingPeriod)}
-					label="Change restock period"
-				/>
+				{#if editing}
+					<OptionTrigger
+						value={item.restock_period}
+						options={SHOPPING_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
+						onchange={(next) => setPeriod(item, next as ShoppingPeriod)}
+						label="Change restock period"
+					/>
+				{:else}
+					<span>{PERIOD_LABELS[item.restock_period]}</span>
+				{/if}
 			</div>
 		</div>
 
@@ -349,15 +384,18 @@
 					Stocked!
 				{/if}
 			</Button>
-			<Button
-				type="button"
-				variant="ghost"
-				size="icon-sm"
-				aria-label="Archive"
-				onclick={() => archive(item)}
-			>
-				<Archive class="size-4" />
-			</Button>
+			{#if editing}
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+					aria-label="Delete item"
+					onclick={() => archive(item)}
+				>
+					<Trash2 class="size-4" />
+				</Button>
+			{/if}
 		</div>
 	</li>
 {/snippet}

@@ -334,6 +334,10 @@ export class UserData {
 		this.habits = this.habits.filter((h) => h.id !== id);
 		this.habitChecks = this.habitChecks.filter((c) => c.habit_id !== id);
 	}
+	updateHabit(id: string, patch: Partial<Habit>) {
+		const i = this.habits.findIndex((h) => h.id === id);
+		if (i >= 0) this.habits[i] = { ...this.habits[i], ...patch };
+	}
 	habitTickedOn(habit_id: string, check_date: string): boolean {
 		return this.habitChecks.some((c) => c.habit_id === habit_id && c.check_date === check_date);
 	}

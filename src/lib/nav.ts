@@ -12,9 +12,7 @@ import Moon from '@lucide/svelte/icons/moon';
 import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
 import Repeat from '@lucide/svelte/icons/repeat';
 import Wallet from '@lucide/svelte/icons/wallet';
-import Package from '@lucide/svelte/icons/package';
 import FolderKanban from '@lucide/svelte/icons/folder-kanban';
-import Database from '@lucide/svelte/icons/database';
 import Sparkles from '@lucide/svelte/icons/sparkles';
 import UtensilsCrossed from '@lucide/svelte/icons/utensils-crossed';
 
@@ -34,8 +32,6 @@ export const NAV_ITEMS: NavItem[] = [
 	{ href: '/tracking', label: 'Tracking', icon: Repeat, milestone: 3 },
 	{ href: '/food', label: 'Food', icon: UtensilsCrossed, milestone: 3 },
 	{ href: '/finance', label: 'Finance', icon: Wallet, milestone: 4 },
-	{ href: '/assets', label: 'Stuff', icon: Package, milestone: 5 },
 	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 },
-	{ href: '/datasets', label: 'Datasets', icon: Database, milestone: 6 },
 	{ href: '/assistant', label: 'Assistant', icon: Sparkles, milestone: 7 }
 ];

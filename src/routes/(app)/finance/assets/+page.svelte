@@ -72,7 +72,10 @@
 			if (v) params.set(k, v);
 		}
 		const qs = params.toString();
-		void goto(qs ? `/assets?${qs}` : '/assets', { keepFocus: true, noScroll: true });
+		void goto(qs ? `/finance/assets?${qs}` : '/finance/assets', {
+			keepFocus: true,
+			noScroll: true
+		});
 	}
 </script>
 
@@ -83,7 +86,7 @@
 			Everything you own. Tag-and-locate for household inventory.
 		</p>
 	</div>
-	<Button variant="outline" size="sm" href="/assets/fields">
+	<Button variant="outline" size="sm" href="/finance/assets/fields">
 		<Settings2 class="size-4" />
 		<span>Fields</span>
 	</Button>
@@ -198,7 +201,7 @@
 		{#each filteredAssets as a (a.id)}
 			<li class="space-y-1 p-4 text-sm">
 				<div class="flex items-center gap-3">
-					<a href={`/assets/${a.id}`} class="font-medium hover:underline">{a.name}</a>
+					<a href={`/finance/assets/${a.id}`} class="font-medium hover:underline">{a.name}</a>
 					<Badge variant="outline" class="text-[10px]">{a.kind}</Badge>
 					{#if a.location}<Badge variant="secondary" class="text-[10px]">{a.location}</Badge>{/if}
 					{#each a.tags ?? [] as t (t)}

@@ -176,6 +176,6 @@ export const actions: Actions = {
 
 	deleteDataset: async ({ params, locals }) => {
 		await locals.supabase.from('datasets').delete().eq('id', params.id);
-		throw redirect(303, '/datasets');
+		throw redirect(303, '/projects/datasets');
 	}
 };

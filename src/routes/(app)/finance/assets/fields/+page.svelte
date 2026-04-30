@@ -10,7 +10,7 @@
 		<div class="space-y-1">
 			<h1 class="text-2xl font-semibold tracking-tight">Asset fields</h1>
 		</div>
-		<Button variant="ghost" size="sm" href="/assets">Back</Button>
+		<Button variant="ghost" size="sm" href="/finance/assets">Back</Button>
 	</header>
 	<DefsManager defs={data.defs} tableName="assets" />
 </section>

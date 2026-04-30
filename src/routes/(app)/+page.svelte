@@ -32,6 +32,43 @@
 	);
 	const lastSleep = $derived(userData.sleepLogs[0] ?? null);
 
+	// Last 14 nights of sleep, oldest → newest. Missing days render as gaps.
+	const sleepDays = 14;
+	const sleepSeries = $derived.by(() => {
+		const byDate = new Map<string, number>();
+		for (const s of userData.sleepLogs) {
+			if (typeof s.hours_slept === 'number') byDate.set(s.log_date, s.hours_slept);
+		}
+		const out: { date: string; hours: number | null }[] = [];
+		const t = new Date();
+		t.setHours(0, 0, 0, 0);
+		for (let i = sleepDays - 1; i >= 0; i--) {
+			const d = new Date(t);
+			d.setDate(d.getDate() - i);
+			const iso = d.toISOString().slice(0, 10);
+			out.push({ date: iso, hours: byDate.get(iso) ?? null });
+		}
+		return out;
+	});
+
+	const sleepAvg = $derived.by(() => {
+		const vals = sleepSeries.map((d) => d.hours).filter((v): v is number => v !== null);
+		if (vals.length === 0) return null;
+		return vals.reduce((a, b) => a + b, 0) / vals.length;
+	});
+
+	function sleepBandColor(h: number): string {
+		if (h >= 7) return '#10b981'; // green-500
+		if (h >= 6) return '#f59e0b'; // amber-500
+		return '#ef4444'; // red-500
+	}
+	function sleepBandLabel(h: number): string {
+		if (h >= 7 && h <= 9) return 'Good';
+		if (h >= 6 && h < 7) return 'Poor';
+		if (h > 9) return 'Long';
+		return 'Awful';
+	}
+
 	// This-month finance KPIs computed from the recent-transactions window the
 	// store already loaded (90d covers the current month for any day-of-month).
 	const finance = $derived.by(() => {
@@ -161,29 +198,112 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root>
+		<Card.Root class="md:col-span-2">
 			<Card.Header class="flex-row items-center justify-between">
 				<div class="flex items-center gap-2">
 					<Moon class="size-4" />
-					<Card.Title class="text-base">Last sleep</Card.Title>
+					<Card.Title class="text-base">Sleep · last {sleepDays} nights</Card.Title>
 				</div>
-				<Button href="/sleep" variant="ghost" size="sm">Log</Button>
-			</Card.Header>
-			<Card.Content class="space-y-1">
-				{#if lastSleep}
-					<div class="flex items-baseline gap-3">
-						<span class="text-2xl font-semibold">
-							{lastSleep.hours_slept ?? '—'}<span class="ml-0.5 text-sm text-muted-foreground"
-								>h</span
+				<div class="flex items-center gap-2">
+					{#if lastSleep}
+						<span class="text-xs text-muted-foreground">
+							Last: <span class="font-medium text-foreground"
+								>{lastSleep.hours_slept ?? '—'}h</span
 							>
+							{#if typeof lastSleep.quality === 'number'}· Q{lastSleep.quality}/10{/if}
 						</span>
-						{#if typeof lastSleep.quality === 'number'}
-							<Badge variant="secondary" class="text-xs">Quality {lastSleep.quality}/10</Badge>
-						{/if}
-					</div>
-					<div class="text-xs text-muted-foreground">{fmtDate(lastSleep.log_date)}</div>
+					{/if}
+					<Button href="/sleep" variant="ghost" size="sm">Log</Button>
+				</div>
+			</Card.Header>
+			<Card.Content>
+				{#if sleepSeries.every((d) => d.hours === null)}
+					<p class="text-sm text-muted-foreground">
+						<a class="underline" href="/sleep">Log your first night</a> to start the chart.
+					</p>
 				{:else}
-					<p class="text-sm text-muted-foreground">Nothing logged yet.</p>
+					{@const yMax = 12}
+					{@const chartH = 140}
+					{@const barW = 100 / sleepDays}
+					<div class="space-y-2">
+						<div class="relative" style={`height: ${chartH}px`}>
+							<!-- Band shading: green 7-9, amber 6-7, red <6 -->
+							<div
+								class="absolute inset-x-0 bg-emerald-500/10"
+								style={`top: ${((yMax - 9) / yMax) * 100}%; height: ${(2 / yMax) * 100}%`}
+								aria-hidden="true"
+							></div>
+							<div
+								class="absolute inset-x-0 bg-amber-500/10"
+								style={`top: ${((yMax - 7) / yMax) * 100}%; height: ${(1 / yMax) * 100}%`}
+								aria-hidden="true"
+							></div>
+							<div
+								class="absolute inset-x-0 bg-red-500/10"
+								style={`top: ${((yMax - 6) / yMax) * 100}%; height: ${(6 / yMax) * 100}%`}
+								aria-hidden="true"
+							></div>
+							<!-- Average reference line -->
+							{#if sleepAvg !== null}
+								<div
+									class="absolute inset-x-0 border-t border-dashed border-foreground/40"
+									style={`top: ${((yMax - sleepAvg) / yMax) * 100}%`}
+									aria-hidden="true"
+								></div>
+								<span
+									class="absolute right-1 -translate-y-full text-[10px] text-muted-foreground"
+									style={`top: ${((yMax - sleepAvg) / yMax) * 100}%`}
+								>
+									avg {sleepAvg.toFixed(1)}h
+								</span>
+							{/if}
+							<!-- Bars -->
+							<div class="absolute inset-0 flex items-end gap-[2px] px-[1px]">
+								{#each sleepSeries as d (d.date)}
+									{@const h = d.hours ?? 0}
+									{@const heightPct = d.hours === null ? 0 : (h / yMax) * 100}
+									<div
+										class="relative flex-1"
+										style={`flex-basis: ${barW}%`}
+										title={d.hours === null
+											? `${d.date}: no log`
+											: `${d.date}: ${h}h (${sleepBandLabel(h)})`}
+									>
+										{#if d.hours !== null}
+											<div
+												class="absolute bottom-0 w-full rounded-t"
+												style={`height: ${heightPct}%; background: ${sleepBandColor(h)}`}
+											></div>
+										{:else}
+											<div
+												class="absolute bottom-0 h-1 w-full rounded-t bg-muted-foreground/15"
+											></div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+						<!-- Day labels: show every 2nd day -->
+						<div class="flex gap-[2px] px-[1px] text-[10px] text-muted-foreground">
+							{#each sleepSeries as d, i (d.date)}
+								<div class="flex-1 text-center" style={`flex-basis: ${barW}%`}>
+									{i % 2 === 0 ? new Date(d.date + 'T00:00:00').getDate() : ''}
+								</div>
+							{/each}
+						</div>
+						<!-- Legend -->
+						<div class="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+							<span class="inline-flex items-center gap-1.5">
+								<span class="size-2 rounded-sm bg-emerald-500"></span> Good 7-9h
+							</span>
+							<span class="inline-flex items-center gap-1.5">
+								<span class="size-2 rounded-sm bg-amber-500"></span> Poor 6-7h
+							</span>
+							<span class="inline-flex items-center gap-1.5">
+								<span class="size-2 rounded-sm bg-red-500"></span> Awful &lt;6h
+							</span>
+						</div>
+					</div>
 				{/if}
 			</Card.Content>
 		</Card.Root>
