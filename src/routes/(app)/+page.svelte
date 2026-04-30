@@ -32,29 +32,51 @@
 	);
 	const lastSleep = $derived(userData.sleepLogs[0] ?? null);
 
-	// Last 14 nights of sleep, oldest → newest. Missing days render as gaps.
-	const sleepDays = 14;
+	// Last 30 nights of sleep, oldest → newest. Only logged days get a point;
+	// the line breaks across gaps so missing days don't pretend to be data.
+	const sleepDays: number = 30;
 	const sleepSeries = $derived.by(() => {
 		const byDate = new Map<string, number>();
 		for (const s of userData.sleepLogs) {
 			if (typeof s.hours_slept === 'number') byDate.set(s.log_date, s.hours_slept);
 		}
-		const out: { date: string; hours: number | null }[] = [];
+		const out: { date: string; index: number; hours: number | null }[] = [];
 		const t = new Date();
 		t.setHours(0, 0, 0, 0);
 		for (let i = sleepDays - 1; i >= 0; i--) {
 			const d = new Date(t);
 			d.setDate(d.getDate() - i);
 			const iso = d.toISOString().slice(0, 10);
-			out.push({ date: iso, hours: byDate.get(iso) ?? null });
+			out.push({ date: iso, index: sleepDays - 1 - i, hours: byDate.get(iso) ?? null });
 		}
 		return out;
 	});
 
+	// Logged points only, with their position along the X axis (0 → sleepDays-1).
+	const sleepPoints = $derived(
+		sleepSeries.filter((d): d is { date: string; index: number; hours: number } => d.hours !== null)
+	);
+
+	// Group into runs of consecutive logged days so we can draw a separate line
+	// per run and leave gaps where days are missing.
+	const sleepSegments = $derived.by(() => {
+		const segs: { date: string; index: number; hours: number }[][] = [];
+		let cur: { date: string; index: number; hours: number }[] = [];
+		for (const p of sleepPoints) {
+			if (cur.length === 0 || p.index === cur[cur.length - 1].index + 1) {
+				cur.push(p);
+			} else {
+				segs.push(cur);
+				cur = [p];
+			}
+		}
+		if (cur.length) segs.push(cur);
+		return segs;
+	});
+
 	const sleepAvg = $derived.by(() => {
-		const vals = sleepSeries.map((d) => d.hours).filter((v): v is number => v !== null);
-		if (vals.length === 0) return null;
-		return vals.reduce((a, b) => a + b, 0) / vals.length;
+		if (sleepPoints.length === 0) return null;
+		return sleepPoints.reduce((a, b) => a + b.hours, 0) / sleepPoints.length;
 	});
 
 	function sleepBandColor(h: number): string {
@@ -67,6 +89,16 @@
 		if (h >= 6 && h < 7) return 'Poor';
 		if (h > 9) return 'Long';
 		return 'Awful';
+	}
+
+	// SVG viewBox math: x ∈ [0, 100], y ∈ [0, 100]. yMax hours mapped to y=0
+	// (top of chart) and 0 hours mapped to y=100 (bottom).
+	const Y_MAX = 12;
+	function xPct(i: number): number {
+		return sleepDays === 1 ? 50 : (i / (sleepDays - 1)) * 100;
+	}
+	function yPct(h: number): number {
+		return ((Y_MAX - h) / Y_MAX) * 100;
 	}
 
 	// This-month finance KPIs computed from the recent-transactions window the
@@ -217,91 +249,121 @@
 				</div>
 			</Card.Header>
 			<Card.Content>
-				{#if sleepSeries.every((d) => d.hours === null)}
+				{#if sleepPoints.length === 0}
 					<p class="text-sm text-muted-foreground">
 						<a class="underline" href="/sleep">Log your first night</a> to start the chart.
 					</p>
 				{:else}
-					{@const yMax = 12}
-					{@const chartH = 140}
-					{@const barW = 100 / sleepDays}
 					<div class="space-y-2">
-						<div class="relative" style={`height: ${chartH}px`}>
-							<!-- Band shading: green 7-9, amber 6-7, red <6 -->
-							<div
-								class="absolute inset-x-0 bg-emerald-500/10"
-								style={`top: ${((yMax - 9) / yMax) * 100}%; height: ${(2 / yMax) * 100}%`}
-								aria-hidden="true"
-							></div>
-							<div
-								class="absolute inset-x-0 bg-amber-500/10"
-								style={`top: ${((yMax - 7) / yMax) * 100}%; height: ${(1 / yMax) * 100}%`}
-								aria-hidden="true"
-							></div>
-							<div
-								class="absolute inset-x-0 bg-red-500/10"
-								style={`top: ${((yMax - 6) / yMax) * 100}%; height: ${(6 / yMax) * 100}%`}
-								aria-hidden="true"
-							></div>
-							<!-- Average reference line -->
-							{#if sleepAvg !== null}
-								<div
-									class="absolute inset-x-0 border-t border-dashed border-foreground/40"
-									style={`top: ${((yMax - sleepAvg) / yMax) * 100}%`}
-									aria-hidden="true"
-								></div>
-								<span
-									class="absolute right-1 -translate-y-full text-[10px] text-muted-foreground"
-									style={`top: ${((yMax - sleepAvg) / yMax) * 100}%`}
-								>
-									avg {sleepAvg.toFixed(1)}h
-								</span>
-							{/if}
-							<!-- Bars -->
-							<div class="absolute inset-0 flex items-end gap-[2px] px-[1px]">
-								{#each sleepSeries as d (d.date)}
-									{@const h = d.hours ?? 0}
-									{@const heightPct = d.hours === null ? 0 : (h / yMax) * 100}
-									<div
-										class="relative flex-1"
-										style={`flex-basis: ${barW}%`}
-										title={d.hours === null
-											? `${d.date}: no log`
-											: `${d.date}: ${h}h (${sleepBandLabel(h)})`}
-									>
-										{#if d.hours !== null}
-											<div
-												class="absolute bottom-0 w-full rounded-t"
-												style={`height: ${heightPct}%; background: ${sleepBandColor(h)}`}
-											></div>
-										{:else}
-											<div
-												class="absolute bottom-0 h-1 w-full rounded-t bg-muted-foreground/15"
-											></div>
-										{/if}
-									</div>
+						<div class="relative h-[160px] w-full">
+							<svg
+								viewBox="0 0 100 100"
+								preserveAspectRatio="none"
+								class="absolute inset-0 size-full overflow-visible"
+								role="img"
+								aria-label="Sleep hours over the last {sleepDays} nights"
+							>
+								<!-- Band shading: green 7-9, amber 6-7, red <6 -->
+								<rect
+									x="0"
+									y={yPct(9)}
+									width="100"
+									height={yPct(7) - yPct(9)}
+									fill="rgb(16 185 129 / 0.1)"
+								/>
+								<rect
+									x="0"
+									y={yPct(7)}
+									width="100"
+									height={yPct(6) - yPct(7)}
+									fill="rgb(245 158 11 / 0.1)"
+								/>
+								<rect
+									x="0"
+									y={yPct(6)}
+									width="100"
+									height={yPct(0) - yPct(6)}
+									fill="rgb(239 68 68 / 0.1)"
+								/>
+
+								<!-- Average reference line -->
+								{#if sleepAvg !== null}
+									<line
+										x1="0"
+										x2="100"
+										y1={yPct(sleepAvg)}
+										y2={yPct(sleepAvg)}
+										stroke="currentColor"
+										stroke-width="0.4"
+										stroke-dasharray="1.5 1.5"
+										class="text-foreground/40"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/if}
+
+								<!-- Line segments through consecutive logged days -->
+								{#each sleepSegments as seg, i (i)}
+									{#if seg.length >= 2}
+										<polyline
+											points={seg.map((p) => `${xPct(p.index)},${yPct(p.hours)}`).join(' ')}
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.4"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											class="text-foreground"
+											vector-effect="non-scaling-stroke"
+										/>
+									{/if}
 								{/each}
+
+								<!-- Points -->
+								{#each sleepPoints as p (p.date)}
+									<circle
+										cx={xPct(p.index)}
+										cy={yPct(p.hours)}
+										r="2.2"
+										fill={sleepBandColor(p.hours)}
+										stroke="white"
+										stroke-width="0.6"
+										vector-effect="non-scaling-stroke"
+									>
+										<title>{p.date}: {p.hours}h ({sleepBandLabel(p.hours)})</title>
+									</circle>
+								{/each}
+							</svg>
+
+							<!-- Y-axis labels overlay (12, 9, 7, 6, 0) -->
+							<div class="pointer-events-none absolute inset-0 text-[10px] text-muted-foreground">
+								<span class="absolute right-0" style={`top: ${yPct(9)}%`}>9h</span>
+								<span class="absolute right-0" style={`top: ${yPct(7)}%`}>7h</span>
+								<span class="absolute right-0" style={`top: ${yPct(6)}%`}>6h</span>
+								{#if sleepAvg !== null}
+									<span class="absolute left-0" style={`top: ${yPct(sleepAvg)}%`}>
+										avg {sleepAvg.toFixed(1)}h
+									</span>
+								{/if}
 							</div>
 						</div>
-						<!-- Day labels: show every 2nd day -->
-						<div class="flex gap-[2px] px-[1px] text-[10px] text-muted-foreground">
-							{#each sleepSeries as d, i (d.date)}
-								<div class="flex-1 text-center" style={`flex-basis: ${barW}%`}>
-									{i % 2 === 0 ? new Date(d.date + 'T00:00:00').getDate() : ''}
-								</div>
-							{/each}
+
+						<!-- X-axis: show first/last date labels -->
+						<div class="flex justify-between text-[10px] text-muted-foreground">
+							<span>{fmtDate(sleepSeries[0].date)}</span>
+							<span>{fmtDate(sleepSeries[sleepSeries.length - 1].date)}</span>
 						</div>
+
 						<!-- Legend -->
 						<div class="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
 							<span class="inline-flex items-center gap-1.5">
-								<span class="size-2 rounded-sm bg-emerald-500"></span> Good 7-9h
+								<span class="size-2 rounded-full bg-emerald-500"></span> Good 7-9h
 							</span>
 							<span class="inline-flex items-center gap-1.5">
-								<span class="size-2 rounded-sm bg-amber-500"></span> Poor 6-7h
+								<span class="size-2 rounded-full bg-amber-500"></span> Poor 6-7h
 							</span>
 							<span class="inline-flex items-center gap-1.5">
-								<span class="size-2 rounded-sm bg-red-500"></span> Awful &lt;6h
+								<span class="size-2 rounded-full bg-red-500"></span> Awful &lt;6h
 							</span>
+							<span class="ml-auto">{sleepPoints.length} of {sleepDays} nights logged</span>
 						</div>
 					</div>
 				{/if}
