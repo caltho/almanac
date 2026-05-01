@@ -72,6 +72,6 @@ export const actions: Actions = {
 	delete: async ({ params, locals }) => {
 		const { error: delError } = await locals.supabase.from('habits').delete().eq('id', params.id);
 		if (delError) return fail(500, { error: delError.message });
-		throw redirect(303, '/tracking/habits');
+		throw redirect(303, '/tasks/habits');
 	}
 };

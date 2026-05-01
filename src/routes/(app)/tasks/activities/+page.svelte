@@ -72,7 +72,7 @@
 
 		busy[activity.id] = true;
 		try {
-			const res = await fetch('/tracking/activities/api', {
+			const res = await fetch('/tasks/activities/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -99,7 +99,7 @@
 		newName = '';
 		showNew = false;
 		try {
-			const res = await fetch('/tracking/activities/api', {
+			const res = await fetch('/tasks/activities/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'create', name })
@@ -115,7 +115,7 @@
 	async function archive(activity: ActivityRow) {
 		userData.removeActivity(activity.id);
 		try {
-			const res = await fetch('/tracking/activities/api', {
+			const res = await fetch('/tasks/activities/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'archive', id: activity.id })
@@ -133,7 +133,7 @@
 		const i = userData.activities.findIndex((a) => a.id === activity.id);
 		if (i >= 0) userData.activities[i] = { ...userData.activities[i], name: trimmed };
 		try {
-			const res = await fetch('/tracking/activities/api', {
+			const res = await fetch('/tasks/activities/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'rename', id: activity.id, name: trimmed })
@@ -151,7 +151,7 @@
 		const i = userData.activities.findIndex((a) => a.id === activity.id);
 		if (i >= 0) userData.activities[i] = { ...userData.activities[i], color };
 		try {
-			const res = await fetch('/tracking/activities/api', {
+			const res = await fetch('/tasks/activities/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setColor', id: activity.id, color })

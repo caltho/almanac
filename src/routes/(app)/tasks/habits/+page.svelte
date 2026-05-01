@@ -147,7 +147,7 @@
 		}
 
 		try {
-			const res = await fetch('/tracking/habits/api', {
+			const res = await fetch('/tasks/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -166,7 +166,7 @@
 	async function archive(habit: Habit) {
 		userData.removeHabit(habit.id);
 		try {
-			const res = await fetch('/tracking/habits/api', {
+			const res = await fetch('/tasks/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'archive', habit_id: habit.id })
@@ -183,7 +183,7 @@
 		const prev = habit.name;
 		userData.updateHabit(habit.id, { name: trimmed });
 		try {
-			const res = await fetch('/tracking/habits/api', {
+			const res = await fetch('/tasks/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'rename', habit_id: habit.id, name: trimmed })
@@ -199,7 +199,7 @@
 		const prev = habit.cadence;
 		userData.updateHabit(habit.id, { cadence });
 		try {
-			const res = await fetch('/tracking/habits/api', {
+			const res = await fetch('/tasks/habits/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setCadence', habit_id: habit.id, cadence })
@@ -232,7 +232,7 @@
 		</p>
 	</div>
 	<div class="flex items-center gap-2">
-		<Button variant="outline" size="sm" href="/tracking/habits/fields">
+		<Button variant="outline" size="sm" href="/tasks/habits/fields">
 			<Settings2 class="size-4" />
 			<span>Fields</span>
 		</Button>
@@ -318,7 +318,7 @@
 						{#if editing}
 							{@render editRow(h, cad)}
 						{:else}
-							<a href={`/tracking/habits/${h.id}`} class="min-w-0 flex-1">
+							<a href={`/tasks/habits/${h.id}`} class="min-w-0 flex-1">
 								<div class="font-medium">{h.name}</div>
 								<div class="text-xs text-muted-foreground">
 									{CADENCE_LABELS[cad]}
@@ -353,7 +353,7 @@
 						{#if editing}
 							{@render editRow(h, cad)}
 						{:else}
-							<a href={`/tracking/habits/${h.id}`} class="min-w-0 flex-1 space-y-0.5">
+							<a href={`/tasks/habits/${h.id}`} class="min-w-0 flex-1 space-y-0.5">
 								<div class="flex items-center gap-2">
 									<span class="font-medium opacity-90">{h.name}</span>
 									{#if st >= 3}

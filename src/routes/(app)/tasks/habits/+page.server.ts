@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 
 // Data flows through (app)/+layout.server.ts → userData store. Actions stay
-// for plain-form fallbacks; the JS path uses /tracking/habits/api for instant
+// for plain-form fallbacks; the JS path uses /tasks/habits/api for instant
 // optimistic updates.
 
 export const actions: Actions = {

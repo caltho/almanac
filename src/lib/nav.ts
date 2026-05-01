@@ -3,14 +3,13 @@
 // auto-updates as new domains land milestone by milestone.
 //
 // Some entries point to a parent route that has its own internal tabs (e.g.
-// /tracking → Habits | Activities; /tasks → Tasks | Checklists; /food →
-// Shopping | Recipes). Those sub-tabs live in the route's `+layout.svelte`.
+// /tasks → Tasks | Checklists | Habits | Activities; /food → Shopping |
+// Recipes). Those sub-tabs live in the route's `+layout.svelte`.
 
 import type { Component } from 'svelte';
 import BookOpen from '@lucide/svelte/icons/book-open';
 import Moon from '@lucide/svelte/icons/moon';
-import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
-import Repeat from '@lucide/svelte/icons/repeat';
+import Zap from '@lucide/svelte/icons/zap';
 import Wallet from '@lucide/svelte/icons/wallet';
 import FolderKanban from '@lucide/svelte/icons/folder-kanban';
 import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -28,8 +27,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
 	{ href: '/journal', label: 'Journal', icon: BookOpen, milestone: 2 },
 	{ href: '/sleep', label: 'Sleep', icon: Moon, milestone: 3 },
-	{ href: '/tasks', label: 'Tasks', icon: CheckCircle2, milestone: 3 },
-	{ href: '/tracking', label: 'Tracking', icon: Repeat, milestone: 3 },
+	{ href: '/tasks', label: 'Doing', icon: Zap, milestone: 3 },
 	{ href: '/food', label: 'Food', icon: UtensilsCrossed, milestone: 3 },
 	{ href: '/finance', label: 'Finance', icon: Wallet, milestone: 4 },
 	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 },

@@ -4,12 +4,24 @@
 
 	const tabs = [
 		{ href: '/tasks', label: 'Tasks' },
-		{ href: '/tasks/checklists', label: 'Checklists' }
+		{ href: '/tasks/checklists', label: 'Checklists' },
+		{ href: '/tasks/habits', label: 'Habits' },
+		{ href: '/tasks/activities', label: 'Activities' }
 	];
 
 	function isActive(href: string) {
-		if (href === '/tasks') return page.url.pathname === '/tasks';
-		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+		const path = page.url.pathname;
+		// Tasks is the bare /tasks list — must not light up on sibling sub-routes.
+		if (href === '/tasks') {
+			if (
+				path.startsWith('/tasks/checklists') ||
+				path.startsWith('/tasks/habits') ||
+				path.startsWith('/tasks/activities')
+			)
+				return false;
+			return path === '/tasks' || path.startsWith('/tasks/');
+		}
+		return path === href || path.startsWith(href + '/');
 	}
 </script>
 
