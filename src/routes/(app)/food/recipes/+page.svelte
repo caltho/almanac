@@ -9,6 +9,7 @@
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Check from '@lucide/svelte/icons/check';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { htmlPreview } from '$lib/html-preview';
 	import { useUserData, type Recipe } from '$lib/stores/userData.svelte';
 
 	let { form } = $props();
@@ -19,16 +20,6 @@
 	let editing = $state(false);
 
 	const recipes = $derived(userData.recipes.slice().sort((a, b) => a.name.localeCompare(b.name)));
-
-	function preview(html: string): string {
-		// Strip tags for the card preview — sanitization happens server-side, this
-		// is just a display niceness so we don't render markup in a small blurb.
-		return html
-			.replace(/<[^>]+>/g, ' ')
-			.replace(/\s+/g, ' ')
-			.trim()
-			.slice(0, 140);
-	}
 
 	async function deleteRecipe(r: Recipe) {
 		if (!confirm(`Delete "${r.name}"? This cannot be undone.`)) return;
@@ -131,7 +122,7 @@
 					{/if}
 					{#if r.ingredients_html}
 						<p class="mt-3 line-clamp-3 text-xs text-muted-foreground">
-							{preview(r.ingredients_html)}
+							{htmlPreview(r.ingredients_html, 140)}
 						</p>
 					{/if}
 				</a>

@@ -122,12 +122,20 @@ function sanitizeAttrs(tag: string, attrText: string): string {
 	return out;
 }
 
+// Match a bare `&` — i.e. one that does NOT already start a valid entity
+// reference. Without this, the editor's serialized output (which entity-
+// encodes & itself) gets double-escaped: `&amp;` → `&amp;amp;`, which
+// renders to the user as the literal text "&amp;". Same trap for &nbsp;.
+const BARE_AMP = /&(?!(?:[a-zA-Z][a-zA-Z0-9]+|#\d+|#[xX][0-9a-fA-F]+);)/g;
+
 function escapeText(s: string): string {
-	return s.replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'));
+	return s.replace(BARE_AMP, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function escapeAttr(s: string): string {
-	return s.replace(/[&"<>]/g, (c) =>
-		c === '&' ? '&amp;' : c === '"' ? '&quot;' : c === '<' ? '&lt;' : '&gt;'
-	);
+	return s
+		.replace(BARE_AMP, '&amp;')
+		.replace(/"/g, '&quot;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
 }

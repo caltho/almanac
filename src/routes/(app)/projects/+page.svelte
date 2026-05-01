@@ -11,6 +11,7 @@
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import ColorDot from '$lib/components/ColorDot.svelte';
 	import { paletteHex, type PaletteToken } from '$lib/palette';
+	import { htmlPreview } from '$lib/html-preview';
 	import { useUserData } from '$lib/stores/userData.svelte';
 
 	let { form } = $props();
@@ -51,13 +52,6 @@
 		{ id: 'all', label: 'All' }
 	];
 
-	function preview(html: string): string {
-		return html
-			.replace(/<[^>]+>/g, ' ')
-			.replace(/\s+/g, ' ')
-			.trim()
-			.slice(0, 160);
-	}
 </script>
 
 <header class="flex flex-wrap items-end justify-between gap-3">
@@ -182,7 +176,7 @@
 							{#if p.description}
 								<p class="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
 							{:else if p.body_html}
-								<p class="line-clamp-3 text-xs text-muted-foreground">{preview(p.body_html)}</p>
+								<p class="line-clamp-3 text-xs text-muted-foreground">{htmlPreview(p.body_html)}</p>
 							{:else}
 								<p class="text-xs text-muted-foreground italic">No notes yet</p>
 							{/if}
