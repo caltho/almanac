@@ -223,97 +223,46 @@
 		<p class="text-sm text-muted-foreground">No activities yet. Add one above.</p>
 	</div>
 {:else}
-	<!-- Not logged today -->
-	{#if due.length > 0}
-		<section class="space-y-2">
-			<h2
-				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-600 uppercase dark:text-amber-400"
+	<!-- Logged today: bright pill row at the top -->
+	<section class="space-y-2">
+		<h2
+			class="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-600 uppercase dark:text-emerald-400"
+		>
+			<Check class="size-3.5" />
+			{isToday ? 'Logged today' : 'Logged on day'} · {done.length}
+		</h2>
+		{#if done.length === 0}
+			<div
+				class="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground"
 			>
-				<Activity class="size-3.5" />
-				{isToday ? 'Today' : 'Not logged'} · {due.length}
-			</h2>
-			<ul
-				class="divide-y divide-border rounded-lg border border-amber-300/60 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5"
-			>
-				{#each due as a (a.id)}
-					<li animate:flip={{ duration: 350 }} class="flex items-center gap-3 p-3">
-						{#if editing}
-							{@render editRow(a)}
-						{:else}
-							{@const hex = paletteHex((a.color as PaletteToken | null) ?? null)}
-							<span class="inline-flex size-7 items-center justify-center" aria-hidden="true">
-								{#if hex}
-									<span class="size-3 rounded-full" style={`background:${hex}`}></span>
-								{:else}
-									<span
-										class="size-3 rounded-full border border-dashed border-muted-foreground/40"
-									></span>
-								{/if}
-							</span>
-							<button
-								type="button"
-								onclick={() => toggle(a)}
-								class="min-w-0 flex-1 text-left font-medium"
-								disabled={busy[a.id]}
-							>
-								{a.name}
-							</button>
-							<Button onclick={() => toggle(a)} size="sm" class="gap-1.5" disabled={busy[a.id]}>
-								<Check class="size-3.5" />
-								Did it
-							</Button>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
-
-	<!-- Logged today -->
-	{#if done.length > 0}
-		<section class="space-y-2">
-			<h2
-				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-			>
-				<Check class="size-3.5" />
-				{isToday ? 'Logged' : 'Logged on day'} · {done.length}
-			</h2>
-			<ul class="divide-y divide-border rounded-lg border">
+				Nothing logged yet — tap something below to add it.
+			</div>
+		{:else}
+			<div class="flex flex-wrap gap-2">
 				{#each done as a (a.id)}
 					{@const burstHere = burst.has(a.id)}
-					<li animate:flip={{ duration: 350 }} class="relative flex items-center gap-3 p-3">
+					{@const hex =
+						paletteHex((a.color as PaletteToken | null) ?? null) ?? 'rgb(16 185 129)'}
+					<div
+						animate:flip={{ duration: 350 }}
+						class="group relative flex items-center gap-2"
+					>
 						{#if editing}
-							{@render editRow(a)}
+							<div class="flex flex-1 items-center gap-2 rounded-full border bg-card px-3 py-1.5">
+								{@render editRow(a)}
+							</div>
 						{:else}
-							{@const hex = paletteHex((a.color as PaletteToken | null) ?? null)}
-							<span class="inline-flex size-7 items-center justify-center" aria-hidden="true">
-								{#if hex}
-									<span class="size-3 rounded-full" style={`background:${hex}`}></span>
-								{:else}
-									<span
-										class="size-3 rounded-full border border-dashed border-muted-foreground/40"
-									></span>
-								{/if}
-							</span>
 							<button
 								type="button"
 								onclick={() => toggle(a)}
-								class="min-w-0 flex-1 text-left font-medium opacity-90"
 								disabled={busy[a.id]}
-							>
-								{a.name}
-							</button>
-							<Button
-								onclick={() => toggle(a)}
-								size="sm"
-								variant="outline"
-								class="gap-1.5"
-								disabled={busy[a.id]}
-								title="Untick"
+								title="Tap to undo"
+								class="inline-flex items-center gap-2 rounded-full border-2 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition-transform hover:scale-[1.03] active:scale-[0.97] disabled:opacity-60"
+								style={`background:${hex}; border-color:${hex}`}
 							>
 								<Check class="size-3.5" />
-								Done
-							</Button>
+								<span>{a.name}</span>
+							</button>
 						{/if}
 
 						{#if burstHere}
@@ -329,6 +278,54 @@
 									Logged!
 								</span>
 							</span>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<!-- Pick what you did: scrollable list of unlogged activities -->
+	{#if due.length > 0}
+		<section class="space-y-2">
+			<h2
+				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+			>
+				<Activity class="size-3.5" />
+				{isToday ? 'Tap what you did' : 'Not logged'} · {due.length}
+			</h2>
+			<ul
+				class="max-h-[60vh] divide-y divide-border overflow-y-auto rounded-lg border bg-card"
+			>
+				{#each due as a (a.id)}
+					<li animate:flip={{ duration: 350 }} class="flex items-center gap-3 p-3">
+						{#if editing}
+							{@render editRow(a)}
+						{:else}
+							{@const hex = paletteHex((a.color as PaletteToken | null) ?? null)}
+							<button
+								type="button"
+								onclick={() => toggle(a)}
+								disabled={busy[a.id]}
+								class="flex min-w-0 flex-1 items-center gap-3 text-left transition-opacity hover:opacity-80 disabled:opacity-60"
+							>
+								<span
+									class="inline-flex size-7 items-center justify-center"
+									aria-hidden="true"
+								>
+									{#if hex}
+										<span class="size-3 rounded-full" style={`background:${hex}`}></span>
+									{:else}
+										<span
+											class="size-3 rounded-full border border-dashed border-muted-foreground/40"
+										></span>
+									{/if}
+								</span>
+								<span class="font-medium">{a.name}</span>
+								<Check
+									class="ml-auto size-4 text-muted-foreground/40 transition-colors group-hover:text-foreground"
+								/>
+							</button>
 						{/if}
 					</li>
 				{/each}

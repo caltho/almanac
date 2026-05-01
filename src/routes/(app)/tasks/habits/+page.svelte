@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { flip } from 'svelte/animate';
-	import { fade } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Badge } from '$lib/components/ui/badge';
 	import DateScroller from '$lib/components/DateScroller.svelte';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Check from '@lucide/svelte/icons/check';
 	import Flame from '@lucide/svelte/icons/flame';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { useUserData, type Habit } from '$lib/stores/userData.svelte';
@@ -31,9 +28,6 @@
 	let showNew = $state(false);
 	let adding = $state(false);
 	let editing = $state(false);
-
-	// Track which habit just got ticked so we can sparkle for ~700ms.
-	let burst = $state<Set<string>>(new Set());
 
 	// --- date helpers ----------------------------------------------------
 	const today = new Date();
@@ -137,15 +131,6 @@
 	async function toggle(habit: Habit) {
 		const wasTicked = tickedOn(habit.id, selectedIso);
 		userData.toggleHabitCheck(habit.id, selectedIso, !wasTicked);
-
-		if (!wasTicked) {
-			burst = new Set([...burst, habit.id]);
-			setTimeout(() => {
-				burst.delete(habit.id);
-				burst = new Set(burst);
-			}, 800);
-		}
-
 		try {
 			const res = await fetch('/tasks/habits/api', {
 				method: 'POST',
@@ -300,107 +285,48 @@
 		</p>
 	</div>
 {:else}
-	<!-- Due now -->
-	{#if due.length > 0}
-		<section class="space-y-2">
-			<h2
-				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-600 uppercase dark:text-amber-400"
-			>
-				<Flame class="size-3.5" />
-				{isToday ? 'Due now' : 'Not ticked'} · {due.length}
-			</h2>
-			<ul
-				class="divide-y divide-border rounded-lg border border-amber-300/60 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/5"
-			>
-				{#each due as h (h.id)}
-					{@const cad = (h.cadence as Cadence) ?? 'daily'}
-					<li animate:flip={{ duration: 350 }} class="flex items-center gap-3 p-3">
-						{#if editing}
-							{@render editRow(h, cad)}
-						{:else}
-							<a href={`/tasks/habits/${h.id}`} class="min-w-0 flex-1">
-								<div class="font-medium">{h.name}</div>
-								<div class="text-xs text-muted-foreground">
-									{CADENCE_LABELS[cad]}
-								</div>
-							</a>
-							<Button onclick={() => toggle(h)} size="sm" class="gap-1.5">
-								<Check class="size-3.5" />
-								{isToday ? 'Done!' : 'Mark done'}
-							</Button>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
-
-	<!-- Done today -->
-	{#if done.length > 0}
-		<section class="space-y-2">
-			<h2
-				class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-			>
-				<Check class="size-3.5" />
-				{isToday ? 'Done' : 'Ticked'} · {done.length}
-			</h2>
-			<ul class="divide-y divide-border rounded-lg border">
-				{#each done as h (h.id)}
-					{@const cad = (h.cadence as Cadence) ?? 'daily'}
-					{@const st = streak(h)}
-					{@const burstHere = burst.has(h.id)}
-					<li animate:flip={{ duration: 350 }} class="relative flex items-center gap-3 p-3">
-						{#if editing}
-							{@render editRow(h, cad)}
-						{:else}
-							<a href={`/tasks/habits/${h.id}`} class="min-w-0 flex-1 space-y-0.5">
-								<div class="flex items-center gap-2">
-									<span class="font-medium opacity-90">{h.name}</span>
-									{#if st >= 3}
-										<Badge
-											variant="outline"
-											class="gap-1 text-[10px] text-amber-600 dark:text-amber-400"
-										>
-											<Flame class="size-2.5" />
-											{st}
-										</Badge>
-									{/if}
-								</div>
-								<div class="text-xs text-muted-foreground">
-									{CADENCE_LABELS[cad]} · ticked
-								</div>
-							</a>
-							<Button
-								onclick={() => toggle(h)}
-								size="sm"
-								variant="outline"
-								class="gap-1.5"
-								title="Untick"
-							>
-								<Check class="size-3.5" />
-								Done
-							</Button>
-						{/if}
-
-						{#if burstHere}
-							<span
-								class="pointer-events-none absolute inset-0 grid place-items-center"
-								out:fade={{ duration: 800 }}
-							>
+	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+		{#each sortedHabits as h (h.id)}
+			{@const cad = (h.cadence as Cadence) ?? 'daily'}
+			{@const ticked = !isDue(h)}
+			{@const st = streak(h)}
+			<div class="habit-card-wrap" animate:flip={{ duration: 350 }}>
+				{#if editing}
+					<div class="flex items-center gap-2 rounded-xl border bg-card p-3">
+						{@render editRow(h, cad)}
+					</div>
+				{:else}
+					<button
+						type="button"
+						onclick={() => toggle(h)}
+						class={`habit-card ${ticked ? 'is-flipped' : ''}`}
+						aria-pressed={ticked}
+						aria-label={ticked ? `Untick ${h.name}` : `Mark ${h.name} done`}
+					>
+						<!-- FRONT: not-done state -->
+						<span class="habit-face habit-front">
+							<span class="text-base font-semibold tracking-tight">{h.name}</span>
+							<span class="text-xs text-muted-foreground">{CADENCE_LABELS[cad]}</span>
+							{#if st >= 3}
 								<span
-									class="flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-lg"
-									style="animation: habit-burst 800ms ease-out forwards;"
+									class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
 								>
-									<Sparkles class="size-3" />
-									Nice!
+									<Flame class="size-2.5" />{st}
 								</span>
-							</span>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
+							{/if}
+						</span>
+
+						<!-- BACK: completed state -->
+						<span class="habit-face habit-back">
+							<Check class="size-6" />
+							<span class="text-base font-semibold tracking-tight">Completed!</span>
+							<span class="text-xs opacity-90">{h.name}</span>
+						</span>
+					</button>
+				{/if}
+			</div>
+		{/each}
+	</div>
 {/if}
 
 {#snippet editRow(h: Habit, cad: Cadence)}
@@ -449,6 +375,64 @@
 		100% {
 			transform: scale(0.9) translateY(-12px);
 			opacity: 0;
+		}
+	}
+
+	/* --- flip card -------------------------------------------------- */
+	.habit-card-wrap {
+		perspective: 900px;
+	}
+	.habit-card {
+		position: relative;
+		display: block;
+		width: 100%;
+		min-height: 110px;
+		border-radius: 0.875rem;
+		transform-style: preserve-3d;
+		transition: transform 500ms cubic-bezier(0.4, 0.2, 0.2, 1);
+		background: transparent;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+	}
+	.habit-card.is-flipped {
+		transform: rotateY(180deg);
+	}
+	.habit-face {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.25rem;
+		padding: 1rem;
+		border-radius: 0.875rem;
+		text-align: center;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+	.habit-front {
+		background: hsl(var(--card, 0 0% 100%));
+		color: hsl(var(--card-foreground, 0 0% 0%));
+		border: 1px solid hsl(var(--border, 0 0% 90%));
+		box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+	}
+	.habit-card:hover .habit-front {
+		border-color: hsl(var(--foreground, 0 0% 0%) / 0.25);
+	}
+	.habit-back {
+		transform: rotateY(180deg);
+		background: linear-gradient(135deg, #10b981, #059669);
+		color: white;
+		border: 2px solid #10b981;
+		box-shadow:
+			0 0 0 4px rgb(16 185 129 / 0.18),
+			0 8px 24px -4px rgb(16 185 129 / 0.4);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.habit-card {
+			transition-duration: 1ms;
 		}
 	}
 </style>

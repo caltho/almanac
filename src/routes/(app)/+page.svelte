@@ -90,9 +90,38 @@
 		if (sleepPoints.length === 0) return null;
 		return sleepPoints.reduce((a, b) => a + b.hours, 0) / sleepPoints.length;
 	});
-	const sleepLatest = $derived(sleepPoints[sleepPoints.length - 1] ?? null);
+
+	// Last-night and 3-day average pull from the full sleepLogs (not the
+	// range-windowed series), since these stats should always reflect the
+	// freshest data regardless of which range the user is viewing.
+	const allLoggedDesc = $derived(
+		userData.sleepLogs
+			.filter(
+				(s): s is typeof s & { hours_slept: number } => typeof s.hours_slept === 'number'
+			)
+			.slice()
+			.sort((a, b) => b.log_date.localeCompare(a.log_date))
+	);
+
+	const lastNight = $derived(allLoggedDesc[0] ?? null);
+
+	// 3-day average rule: prefer the last 3 calendar days (today, yesterday,
+	// day-before), averaging only the days that were actually logged. If none
+	// of those 3 days were logged, fall back to the most recent 3 logged days.
+	const sleep3DayAvg = $derived.by(() => {
+		if (allLoggedDesc.length === 0) return null;
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const cutoff = new Date(today);
+		cutoff.setDate(today.getDate() - 2);
+		const cutoffIso = cutoff.toISOString().slice(0, 10);
+		const recent = allLoggedDesc.filter((s) => s.log_date >= cutoffIso);
+		const sample = recent.length > 0 ? recent : allLoggedDesc.slice(0, 3);
+		return sample.reduce((a, b) => a + b.hours_slept, 0) / sample.length;
+	});
+
 	const sleepDelta = $derived(
-		sleepLatest && sleepAvg !== null ? sleepLatest.hours - sleepAvg : null
+		lastNight && sleepAvg !== null ? lastNight.hours_slept - sleepAvg : null
 	);
 	const sleepMin = $derived(
 		sleepPoints.length === 0 ? null : Math.min(...sleepPoints.map((p) => p.hours))
@@ -101,11 +130,6 @@
 		sleepPoints.length === 0 ? null : Math.max(...sleepPoints.map((p) => p.hours))
 	);
 
-	function sleepBandColor(h: number): string {
-		if (h >= 7) return '#10b981';
-		if (h >= 6) return '#f59e0b';
-		return '#ef4444';
-	}
 	function sleepBandLabel(h: number): string {
 		if (h >= 7 && h <= 9) return 'Good';
 		if (h >= 6 && h < 7) return 'Poor';
@@ -283,26 +307,41 @@
 					<Button href="/sleep" variant="ghost" size="sm">Log</Button>
 				</div>
 
-				<!-- Headline: latest reading + delta vs period average -->
-				<div class="flex items-baseline gap-3">
-					<span class="text-3xl font-semibold tracking-tight">
-						{#if sleepLatest}{sleepLatest.hours}{:else}—{/if}<span
-							class="ml-0.5 text-base text-muted-foreground">h</span
-						>
-					</span>
-					{#if sleepDelta !== null}
-						{@const up = sleepDelta >= 0}
-						<span
-							class={`text-xs ${
-								up ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-							}`}
-						>
-							{up ? '↑' : '↓'}
-							{Math.abs(sleepDelta).toFixed(1)}h vs {sleepRange.toUpperCase()} avg
-						</span>
-					{:else if sleepLatest}
-						<span class="text-xs text-muted-foreground">latest</span>
-					{/if}
+				<!-- Headline: last night, 3-day rolling avg, delta vs range avg -->
+				<div class="flex flex-wrap items-end gap-x-6 gap-y-2">
+					<div class="space-y-0.5">
+						<div class="text-[10px] tracking-widest text-muted-foreground uppercase">
+							Last night
+						</div>
+						<div class="flex items-baseline gap-2">
+							<span class="text-3xl font-semibold tracking-tight tabular-nums">
+								{#if lastNight}{lastNight.hours_slept}{:else}—{/if}<span
+									class="ml-0.5 text-base text-muted-foreground">h</span
+								>
+							</span>
+							{#if sleepDelta !== null}
+								{@const up = sleepDelta >= 0}
+								<span
+									class={`text-xs tabular-nums ${
+										up ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+									}`}
+								>
+									{up ? '↑' : '↓'}{Math.abs(sleepDelta).toFixed(1)}h
+									<span class="text-muted-foreground">vs {sleepRange.toUpperCase()} avg</span>
+								</span>
+							{/if}
+						</div>
+					</div>
+					<div class="space-y-0.5">
+						<div class="text-[10px] tracking-widest text-muted-foreground uppercase">
+							3-day avg
+						</div>
+						<div class="text-xl font-medium tracking-tight tabular-nums">
+							{#if sleep3DayAvg !== null}{sleep3DayAvg.toFixed(1)}<span
+									class="ml-0.5 text-sm text-muted-foreground">h</span
+								>{:else}—{/if}
+						</div>
+					</div>
 				</div>
 
 				<!-- Range pills -->
@@ -413,21 +452,33 @@
 									{/if}
 								{/each}
 
-								<!-- Points (skip on dense ranges to reduce noise) -->
-								{#if sleepPoints.length <= 60}
-									{#each sleepPoints as p (p.date)}
-										<circle
-											cx={xPct(p.index, sleepDays)}
-											cy={yPct(p.hours, sleepYRange)}
-											r={sleepPoints.length <= 14 ? 2.4 : 1.8}
-											fill={sleepBandColor(p.hours)}
-											stroke="white"
-											stroke-width="0.7"
-											vector-effect="non-scaling-stroke"
+								<!-- Single soft halo + dot at the most recent point — Google
+									Finance-style "current value" marker, instead of dotting
+									every day. -->
+								{#if sleepPoints.length > 0}
+									{@const last = sleepPoints[sleepPoints.length - 1]}
+									<circle
+										cx={xPct(last.index, sleepDays)}
+										cy={yPct(last.hours, sleepYRange)}
+										r="3.6"
+										class="text-emerald-500"
+										fill="currentColor"
+										fill-opacity="0.18"
+									/>
+									<circle
+										cx={xPct(last.index, sleepDays)}
+										cy={yPct(last.hours, sleepYRange)}
+										r="1.6"
+										class="text-emerald-600 dark:text-emerald-400"
+										fill="currentColor"
+										stroke="white"
+										stroke-width="0.6"
+										vector-effect="non-scaling-stroke"
+									>
+										<title
+											>{last.date}: {last.hours}h ({sleepBandLabel(last.hours)})</title
 										>
-											<title>{p.date}: {p.hours}h ({sleepBandLabel(p.hours)})</title>
-										</circle>
-									{/each}
+									</circle>
 								{/if}
 							</svg>
 

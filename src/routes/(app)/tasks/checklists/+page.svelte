@@ -225,20 +225,6 @@
 							<Plus class="size-4" />
 							<span>{showAdd[list.id] ? 'Close' : 'Add item'}</span>
 						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant={isEditing ? 'default' : 'outline'}
-							onclick={() => (editing[list.id] = !isEditing)}
-						>
-							{#if isEditing}
-								<Check class="size-4" />
-								<span>Done</span>
-							{:else}
-								<Pencil class="size-4" />
-								<span>Edit</span>
-							{/if}
-						</Button>
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}
@@ -254,6 +240,15 @@
 								{/snippet}
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content align="end" class="w-44">
+								<DropdownMenu.Item onclick={() => (editing[list.id] = !isEditing)}>
+									{#if isEditing}
+										<Check class="size-4" />
+										<span>Done editing</span>
+									{:else}
+										<Pencil class="size-4" />
+										<span>Edit</span>
+									{/if}
+								</DropdownMenu.Item>
 								<DropdownMenu.Item
 									disabled={checkedCount === 0}
 									onclick={() => clearChecks(list)}
