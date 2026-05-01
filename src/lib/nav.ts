@@ -12,7 +12,6 @@ import Moon from '@lucide/svelte/icons/moon';
 import Zap from '@lucide/svelte/icons/zap';
 import Wallet from '@lucide/svelte/icons/wallet';
 import FolderKanban from '@lucide/svelte/icons/folder-kanban';
-import Sparkles from '@lucide/svelte/icons/sparkles';
 import UtensilsCrossed from '@lucide/svelte/icons/utensils-crossed';
 
 export type NavItem = {
@@ -30,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
 	{ href: '/tasks', label: 'Doing', icon: Zap, milestone: 3 },
 	{ href: '/food', label: 'Food', icon: UtensilsCrossed, milestone: 3 },
 	{ href: '/finance', label: 'Finance', icon: Wallet, milestone: 4 },
-	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 },
-	{ href: '/assistant', label: 'Assistant', icon: Sparkles, milestone: 7 }
+	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 }
+	// Assistant tab hidden until the AI loop is wired up — route lives at
+	// /assistant and still works if you visit it directly.
 ];
