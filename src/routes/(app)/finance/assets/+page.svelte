@@ -6,7 +6,6 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsEditor, AttrsRenderer } from '$lib/custom-attrs';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Archive from '@lucide/svelte/icons/archive';
 	import { formatMoney } from '$lib/finance';
 	import { page } from '$app/state';
@@ -79,17 +78,11 @@
 	}
 </script>
 
-<header class="flex items-start justify-between">
-	<div class="space-y-1">
-		<h2 class="text-xl font-semibold tracking-tight">Stuff</h2>
-		<p class="text-sm text-muted-foreground">
-			Everything you own. Tag-and-locate for household inventory.
-		</p>
-	</div>
-	<Button variant="outline" size="sm" href="/finance/assets/fields">
-		<Settings2 class="size-4" />
-		<span>Fields</span>
-	</Button>
+<header class="space-y-1">
+	<h2 class="text-xl font-semibold tracking-tight">Stuff</h2>
+	<p class="text-sm text-muted-foreground">
+		Everything you own. Tag-and-locate for household inventory.
+	</p>
 </header>
 
 <form onsubmit={applyFilters} class="grid gap-3 sm:grid-cols-[auto_auto_1fr_auto] sm:items-end">

@@ -5,7 +5,6 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import Plus from '@lucide/svelte/icons/plus';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import FolderKanban from '@lucide/svelte/icons/folder-kanban';
 	import GitBranch from '@lucide/svelte/icons/git-branch';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
@@ -59,16 +58,10 @@
 		<h1 class="text-2xl font-semibold tracking-tight">Projects</h1>
 		<p class="text-sm text-muted-foreground">Personal initiatives and the work behind them.</p>
 	</div>
-	<div class="flex items-center gap-2">
-		<Button variant="outline" size="sm" href="/projects/fields">
-			<Settings2 class="size-4" />
-			<span>Fields</span>
-		</Button>
-		<Button size="sm" onclick={() => (showNew = !showNew)}>
-			<Plus class="size-4" />
-			<span>{showNew ? 'Close' : 'New'}</span>
-		</Button>
-	</div>
+	<Button size="sm" onclick={() => (showNew = !showNew)}>
+		<Plus class="size-4" />
+		<span>{showNew ? 'Close' : 'New'}</span>
+	</Button>
 </header>
 
 <nav class="flex flex-wrap gap-1">

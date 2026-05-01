@@ -7,7 +7,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
 	import { AttrsEditor, AttrsRenderer } from '$lib/custom-attrs';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { useUserData } from '$lib/stores/userData.svelte';
 
@@ -73,10 +72,6 @@
 				One row per night. Hours auto-calculate from bed/wake times.
 			</p>
 		</div>
-		<Button variant="outline" size="sm" href="/sleep/fields">
-			<Settings2 class="size-4" />
-			<span>Fields</span>
-		</Button>
 	</header>
 
 	<Card.Root>

@@ -9,8 +9,7 @@
 		{ href: '/finance/budgets', label: 'Budgets' },
 		{ href: '/finance/assets', label: 'Stuff' },
 		{ href: '/finance/assets/net-worth', label: 'Net worth' },
-		{ href: '/finance/import', label: 'Import' },
-		{ href: '/finance/fields', label: 'Fields' }
+		{ href: '/finance/import', label: 'Import' }
 	];
 
 	function isActive(href: string) {

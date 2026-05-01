@@ -9,7 +9,7 @@ notes) plus parent/child nesting and links to tasks via `tasks.project_id`.
   archived / all). Each card shows a body preview.
 - `/projects/[id]` — detail view. Click into the body area to edit; save
   writes both the body and the metadata (name, status, color, custom attrs).
-- `/projects/fields` — manage custom-attribute defs for projects.
+- Field defs for every domain (projects included) live under `/settings/fields`.
 
 ## Conventions
 

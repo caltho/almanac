@@ -4,7 +4,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import DateScroller from '$lib/components/DateScroller.svelte';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Check from '@lucide/svelte/icons/check';
 	import Flame from '@lucide/svelte/icons/flame';
@@ -200,9 +199,6 @@
 	const sortedHabits = $derived(
 		userData.habits.slice().sort((a, b) => a.name.localeCompare(b.name))
 	);
-
-	const due = $derived(sortedHabits.filter(isDue));
-	const done = $derived(sortedHabits.filter((h) => !isDue(h)));
 </script>
 
 <header class="flex flex-wrap items-end justify-between gap-3">
@@ -217,10 +213,6 @@
 		</p>
 	</div>
 	<div class="flex items-center gap-2">
-		<Button variant="outline" size="sm" href="/tasks/habits/fields">
-			<Settings2 class="size-4" />
-			<span>Fields</span>
-		</Button>
 		<Button size="sm" onclick={() => (showNew = !showNew)}>
 			<Plus class="size-4" />
 			<span>{showNew ? 'Close' : 'New'}</span>

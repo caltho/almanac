@@ -5,7 +5,6 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Settings from '@lucide/svelte/icons/settings';
 	import LogOut from '@lucide/svelte/icons/log-out';
-	import Users from '@lucide/svelte/icons/users';
 	import { NAV_ITEMS } from '$lib/nav';
 	import { setUserData } from '$lib/stores/userData.svelte';
 
@@ -86,15 +85,7 @@
 						{#snippet child({ props })}
 							<a href="/settings" {...props}>
 								<Settings class="size-4" />
-								<span>Profile</span>
-							</a>
-						{/snippet}
-					</DropdownMenu.Item>
-					<DropdownMenu.Item>
-						{#snippet child({ props })}
-							<a href="/settings/shares" {...props}>
-								<Users class="size-4" />
-								<span>Shares</span>
+								<span>Settings</span>
 							</a>
 						{/snippet}
 					</DropdownMenu.Item>

@@ -4,7 +4,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Plus from '@lucide/svelte/icons/plus';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { useUserData, type Task } from '$lib/stores/userData.svelte';
 
@@ -125,16 +124,10 @@
 			<h1 class="text-2xl font-semibold tracking-tight">Tasks</h1>
 			<p class="text-sm text-muted-foreground">Flat list by status. Projects land in M5.</p>
 		</div>
-		<div class="flex items-center gap-1">
-			<Button size="sm" onclick={() => (showNew = !showNew)}>
-				<Plus class="size-4" />
-				<span>{showNew ? 'Close' : 'New task'}</span>
-			</Button>
-			<Button variant="outline" size="sm" href="/tasks/fields">
-				<Settings2 class="size-4" />
-				<span>Fields</span>
-			</Button>
-		</div>
+		<Button size="sm" onclick={() => (showNew = !showNew)}>
+			<Plus class="size-4" />
+			<span>{showNew ? 'Close' : 'New task'}</span>
+		</Button>
 	</header>
 
 	{#if showNew}

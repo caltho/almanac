@@ -13,7 +13,7 @@
 	let submitting = $state(false);
 </script>
 
-<section class="mx-auto max-w-2xl space-y-8">
+<div class="space-y-8">
 	<header class="space-y-1">
 		<h1 class="text-2xl font-semibold tracking-tight">Shares</h1>
 		<p class="text-sm text-muted-foreground">
@@ -157,4 +157,4 @@
 			</ul>
 		{/if}
 	</section>
-</section>
+</div>

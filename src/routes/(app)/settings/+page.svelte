@@ -9,13 +9,12 @@
 	let saving = $state(false);
 </script>
 
-<section class="mx-auto max-w-xl space-y-6">
-	<header class="space-y-1">
-		<h1 class="text-2xl font-semibold tracking-tight">Profile</h1>
-		<p class="text-sm text-muted-foreground">How you appear to people you share data with.</p>
-	</header>
+<header class="space-y-1">
+	<h1 class="text-2xl font-semibold tracking-tight">Profile</h1>
+	<p class="text-sm text-muted-foreground">How you appear to people you share data with.</p>
+</header>
 
-	<Card.Root>
+<Card.Root>
 		<form
 			method="POST"
 			action="?/update"
@@ -59,4 +58,3 @@
 			</Card.Footer>
 		</form>
 	</Card.Root>
-</section>

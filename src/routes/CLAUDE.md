@@ -5,7 +5,7 @@ SvelteKit route tree. Two route groups: `(auth)` for pre-login screens, `(app)` 
 ## Groups (to be populated)
 
 - `(auth)/` — `login`, magic-link callback, logout redirect. No layout chrome.
-- `(app)/` — authenticated shell. Layout loads the session and redirects unauthenticated users to `/login`. Children: `journal`, `sleep`, `tasks` (the **Doing** umbrella with `tasks`, `checklists`, `habits`, `activities` sub-tabs), `food`, `finance` (with `assets` sub-area for Stuff + Net worth), `projects` (with `datasets` sub-area), `assistant`, `settings`.
+- `(app)/` — authenticated shell. Layout loads the session and redirects unauthenticated users to `/login`. Children: `journal`, `sleep`, `tasks` (the **Doing** umbrella with `tasks`, `checklists`, `habits`, `activities` sub-tabs), `food`, `finance` (with `assets` sub-area for Stuff + Net worth), `projects` (with `datasets` sub-area), `assistant`, `settings` (with `fields` and `shares` sub-tabs — every domain's custom-attribute editor lives at `/settings/fields`).
 - `api/ai/` — Anthropic tool-use endpoint (M7).
 
 ## Rules

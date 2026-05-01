@@ -3,7 +3,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Plus from '@lucide/svelte/icons/plus';
-	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import { useUserData } from '$lib/stores/userData.svelte';
 
 	const userData = useUserData();
@@ -26,10 +25,6 @@
 			<p class="text-sm text-muted-foreground">Dated entries with mood + your own fields.</p>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" size="sm" href="/journal/fields">
-				<Settings2 class="size-4" />
-				<span>Fields</span>
-			</Button>
 			<Button size="sm" href="/journal/new">
 				<Plus class="size-4" />
 				<span>New entry</span>
