@@ -5,10 +5,12 @@
 	import { formatMoney, currentYearMonth, monthRange } from '$lib/finance';
 	import BookOpen from '@lucide/svelte/icons/book-open';
 	import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
+	import Check from '@lucide/svelte/icons/check';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Repeat from '@lucide/svelte/icons/repeat';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import Wallet from '@lucide/svelte/icons/wallet';
-	import { useUserData } from '$lib/stores/userData.svelte';
+	import { useUserData, type Habit } from '$lib/stores/userData.svelte';
 
 	let { data } = $props();
 	const userData = useUserData();
@@ -16,8 +18,23 @@
 	const today = new Date().toISOString().slice(0, 10);
 	const name = $derived(data.profile?.display_name ?? data.user?.email?.split('@')[0] ?? 'you');
 
+	type Cadence = 'daily' | 'weekdays' | 'weekly' | 'monthly';
+	const CADENCE_LABELS: Record<Cadence, string> = {
+		daily: 'Daily',
+		weekdays: 'Weekdays',
+		weekly: 'Weekly',
+		monthly: 'Monthly'
+	};
+
 	// Slice the store down to dashboard-sized lists.
 	const recentJournal = $derived(userData.journalEntries.slice(0, 3));
+	const recentNotes = $derived(
+		userData.quickNotes
+			.filter((n) => !n.internalised)
+			.slice()
+			.sort((a, b) => b.created_at.localeCompare(a.created_at))
+			.slice(0, 5)
+	);
 	const openTasks = $derived(
 		userData.tasks
 			.filter((t) => t.status === 'todo' || t.status === 'doing')
@@ -30,10 +47,45 @@
 			})
 			.slice(0, 5)
 	);
-	// Stock-ticker-style sleep chart: line over a selectable date range,
-	// with band shading for Good/Poor/Awful sleep zones. Mobile-first —
-	// generous touch targets on the range pills and a SVG that scales to
-	// the card's width.
+
+	// Cadence-aware "is this habit due on the current view date?" — same
+	// logic as the habits page so the dashboard mirror stays in sync.
+	function isHabitDue(habit: Habit, dateIso: string): boolean {
+		const cadence = (habit.cadence as Cadence) ?? 'daily';
+		const checks = userData.habitChecks.filter((c) => c.habit_id === habit.id);
+		const sel = new Date(dateIso + 'T00:00:00');
+		if (cadence === 'daily') return !checks.some((c) => c.check_date === dateIso);
+		if (cadence === 'weekdays') {
+			const dow = sel.getDay();
+			if (dow === 0 || dow === 6) return false;
+			return !checks.some((c) => c.check_date === dateIso);
+		}
+		if (cadence === 'weekly') {
+			const start = new Date(sel);
+			const dow = start.getDay() === 0 ? 7 : start.getDay();
+			start.setDate(start.getDate() - (dow - 1));
+			const end = new Date(start);
+			end.setDate(end.getDate() + 6);
+			const startIso = start.toISOString().slice(0, 10);
+			const endIso = end.toISOString().slice(0, 10);
+			return !checks.some((c) => c.check_date >= startIso && c.check_date <= endIso);
+		}
+		if (cadence === 'monthly') {
+			const y = sel.getFullYear();
+			const m = sel.getMonth();
+			return !checks.some((c) => {
+				const [cy, cm] = c.check_date.split('-').map(Number);
+				return cy === y && cm - 1 === m;
+			});
+		}
+		return true;
+	}
+
+	const sortedHabits = $derived(
+		userData.habits.slice().sort((a, b) => a.name.localeCompare(b.name))
+	);
+
+	// --- Sleep chart ---------------------------------------------------------
 	type SleepRange = '1w' | '1m' | '3m' | '1y';
 	const RANGE_DAYS: Record<SleepRange, number> = { '1w': 7, '1m': 30, '3m': 90, '1y': 365 };
 	const RANGE_LABELS: Record<SleepRange, string> = {
@@ -45,45 +97,44 @@
 	let sleepRange = $state<SleepRange>('1m');
 	const sleepDays = $derived(RANGE_DAYS[sleepRange]);
 
-	type SleepPoint = { date: string; index: number; hours: number };
+	type SleepPoint = {
+		date: string;
+		index: number;
+		hours: number;
+		quality: number | null;
+		notes: string | null;
+	};
 
+	// Chronological windowed series — used for X-axis range labels and the
+	// "X of N nights logged" stat. Logged points only feed the line.
 	const sleepSeries = $derived.by(() => {
-		const byDate = new Map<string, number>();
-		for (const s of userData.sleepLogs) {
-			if (typeof s.hours_slept === 'number') byDate.set(s.log_date, s.hours_slept);
-		}
-		const out: { date: string; index: number; hours: number | null }[] = [];
 		const t = new Date();
 		t.setHours(0, 0, 0, 0);
+		const out: { date: string; index: number }[] = [];
 		for (let i = sleepDays - 1; i >= 0; i--) {
 			const d = new Date(t);
 			d.setDate(d.getDate() - i);
-			const iso = d.toISOString().slice(0, 10);
-			out.push({ date: iso, index: sleepDays - 1 - i, hours: byDate.get(iso) ?? null });
+			out.push({ date: d.toISOString().slice(0, 10), index: sleepDays - 1 - i });
 		}
 		return out;
 	});
 
-	const sleepPoints = $derived(
-		sleepSeries.filter((d): d is SleepPoint => d.hours !== null)
-	);
-
-	// Drop one segment per run of consecutive logged days so missing days
-	// leave a visible gap in the line — same pattern stock charts use for
-	// trading-day-only data.
-	const sleepSegments = $derived.by(() => {
-		const segs: SleepPoint[][] = [];
-		let cur: SleepPoint[] = [];
-		for (const p of sleepPoints) {
-			if (cur.length === 0 || p.index === cur[cur.length - 1].index + 1) {
-				cur.push(p);
-			} else {
-				segs.push(cur);
-				cur = [p];
-			}
-		}
-		if (cur.length) segs.push(cur);
-		return segs;
+	const sleepPoints = $derived.by(() => {
+		const cutoff = sleepSeries[0]?.date ?? '';
+		const positions = new Map(sleepSeries.map((s) => [s.date, s.index]));
+		return userData.sleepLogs
+			.filter(
+				(s): s is typeof s & { hours_slept: number } =>
+					typeof s.hours_slept === 'number' && s.log_date >= cutoff
+			)
+			.map((s) => ({
+				date: s.log_date,
+				index: positions.get(s.log_date) ?? 0,
+				hours: s.hours_slept,
+				quality: s.quality ?? null,
+				notes: s.notes ?? null
+			}))
+			.sort((a, b) => a.index - b.index) satisfies SleepPoint[];
 	});
 
 	const sleepAvg = $derived.by(() => {
@@ -105,15 +156,12 @@
 
 	const lastNight = $derived(allLoggedDesc[0] ?? null);
 
-	// 3-day average rule: prefer the last 3 calendar days (today, yesterday,
-	// day-before), averaging only the days that were actually logged. If none
-	// of those 3 days were logged, fall back to the most recent 3 logged days.
 	const sleep3DayAvg = $derived.by(() => {
 		if (allLoggedDesc.length === 0) return null;
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const cutoff = new Date(today);
-		cutoff.setDate(today.getDate() - 2);
+		const ref = new Date();
+		ref.setHours(0, 0, 0, 0);
+		const cutoff = new Date(ref);
+		cutoff.setDate(ref.getDate() - 2);
 		const cutoffIso = cutoff.toISOString().slice(0, 10);
 		const recent = allLoggedDesc.filter((s) => s.log_date >= cutoffIso);
 		const sample = recent.length > 0 ? recent : allLoggedDesc.slice(0, 3);
@@ -136,40 +184,69 @@
 		if (h > 9) return 'Long';
 		return 'Awful';
 	}
+	function sleepBandColor(h: number): string {
+		if (h >= 7) return '#10b981';
+		if (h >= 6) return '#f59e0b';
+		return '#ef4444';
+	}
 
-	// SVG viewBox is 100 wide × 100 tall. The chart maps hours into a
-	// dynamic Y range so short windows with similar values still spread
-	// out vertically — tighter than the old fixed 0-12h scale.
 	const sleepYRange = $derived.by(() => {
 		if (sleepPoints.length === 0) return { min: 4, max: 10 };
 		const lo = Math.floor(Math.min(...sleepPoints.map((p) => p.hours)) - 0.5);
 		const hi = Math.ceil(Math.max(...sleepPoints.map((p) => p.hours)) + 0.5);
-		// Always keep the Good band (7-9h) at least partially visible.
 		return { min: Math.min(lo, 5), max: Math.max(hi, 9) };
 	});
 
-	function xPct(i: number, days: number): number {
-		return days === 1 ? 50 : (i / (days - 1)) * 100;
+	function xPct(i: number): number {
+		return sleepDays === 1 ? 50 : (i / (sleepDays - 1)) * 100;
 	}
-	function yPct(h: number, range: { min: number; max: number }): number {
-		const span = range.max - range.min;
-		return ((range.max - h) / span) * 100;
+	function yPct(h: number): number {
+		const span = sleepYRange.max - sleepYRange.min;
+		return ((sleepYRange.max - h) / span) * 100;
 	}
 
-	function fmtRangeStart(): string {
-		return new Date(sleepSeries[0].date + 'T00:00:00').toLocaleDateString(undefined, {
+	function fmtFull(date: string) {
+		return new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
+			weekday: 'short',
 			day: 'numeric',
 			month: 'short'
 		});
 	}
-	function fmtRangeEnd(): string {
-		return new Date(
-			sleepSeries[sleepSeries.length - 1].date + 'T00:00:00'
-		).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+	// Hover/tap interaction: find the nearest logged point by X and pin the
+	// crosshair + popover there. Powered by an invisible <rect> overlay so
+	// the whole chart area is the hit zone, not just the dots.
+	let chartEl = $state<HTMLDivElement>();
+	let hoveredIndex = $state<number | null>(null);
+
+	function pickNearest(clientX: number) {
+		if (!chartEl || sleepPoints.length === 0) return;
+		const rect = chartEl.getBoundingClientRect();
+		const xRel = ((clientX - rect.left) / rect.width) * 100;
+		let best = 0;
+		let bestDist = Infinity;
+		for (let i = 0; i < sleepPoints.length; i++) {
+			const dx = Math.abs(xPct(sleepPoints[i].index) - xRel);
+			if (dx < bestDist) {
+				bestDist = dx;
+				best = i;
+			}
+		}
+		hoveredIndex = best;
 	}
 
-	// This-month finance KPIs computed from the recent-transactions window the
-	// store already loaded (90d covers the current month for any day-of-month).
+	function onPointerMove(e: PointerEvent) {
+		pickNearest(e.clientX);
+	}
+	function onPointerLeave() {
+		hoveredIndex = null;
+	}
+
+	const hovered = $derived(
+		hoveredIndex !== null ? (sleepPoints[hoveredIndex] ?? null) : null
+	);
+
+	// --- This-month finance KPI ---------------------------------------------
 	const finance = $derived.by(() => {
 		const ym = currentYearMonth();
 		const { start, end } = monthRange(ym);
@@ -186,9 +263,9 @@
 	function fmtDue(d: string | null) {
 		if (!d) return '';
 		const date = new Date(d + 'T00:00:00');
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const diff = Math.round((date.getTime() - today.getTime()) / 86400000);
+		const now = new Date();
+		now.setHours(0, 0, 0, 0);
+		const diff = Math.round((date.getTime() - now.getTime()) / 86400000);
 		if (diff === 0) return 'Today';
 		if (diff === 1) return 'Tomorrow';
 		if (diff === -1) return 'Yesterday';
@@ -216,7 +293,6 @@
 			});
 			if (!res.ok) throw new Error();
 		} catch {
-			// Roll back: flip the state back to its pre-click value.
 			userData.toggleHabitCheck(habit_id, today, wasTicked);
 		}
 	}
@@ -238,31 +314,41 @@
 				<Button href="/tasks/habits" variant="ghost" size="sm">All</Button>
 			</Card.Header>
 			<Card.Content>
-				{#if userData.habits.length === 0}
+				{#if sortedHabits.length === 0}
 					<p class="text-sm text-muted-foreground">
 						No habits yet. <a class="underline" href="/tasks/habits">Add one</a>.
 					</p>
 				{:else}
-					<ul class="space-y-1">
-						{#each userData.habits as h (h.id)}
-							{@const ticked = userData.habitTickedOn(h.id, today)}
-							<li class="flex items-center gap-3 text-sm">
-								<button
-									type="button"
-									onclick={() => toggleHabit(h.id)}
-									class={`grid size-5 shrink-0 place-items-center rounded border transition-colors ${
-										ticked
-											? 'border-primary bg-primary text-primary-foreground'
-											: 'border-border hover:border-foreground'
+					<div class="grid gap-2 sm:grid-cols-2">
+						{#each sortedHabits as h (h.id)}
+							{@const ticked = !isHabitDue(h, today)}
+							{@const cad = (h.cadence as Cadence) ?? 'daily'}
+							<button
+								type="button"
+								onclick={() => toggleHabit(h.id)}
+								class={`relative flex flex-col items-start gap-0.5 rounded-lg border p-2.5 text-left transition-all ${
+									ticked
+										? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm'
+										: 'border-border bg-card hover:border-foreground/30'
+								}`}
+								aria-pressed={ticked}
+							>
+								<span class="flex w-full items-center gap-1.5 text-sm font-semibold">
+									{#if ticked}
+										<Check class="size-3.5 shrink-0" />
+									{/if}
+									<span class="truncate">{h.name}</span>
+								</span>
+								<span
+									class={`text-[10px] tracking-wide uppercase ${
+										ticked ? 'text-white/80' : 'text-muted-foreground'
 									}`}
-									aria-label={`Tick ${h.name}`}
 								>
-									{#if ticked}✓{/if}
-								</button>
-								<span class={ticked ? 'line-through opacity-60' : ''}>{h.name}</span>
-							</li>
+									{ticked ? 'Done' : CADENCE_LABELS[cad]}
+								</span>
+							</button>
 						{/each}
-					</ul>
+					</div>
 				{/if}
 			</Card.Content>
 		</Card.Root>
@@ -286,9 +372,7 @@
 									{t.title}
 								</a>
 								{#if t.due_date}
-									<Badge variant="secondary" class="shrink-0 text-[10px]"
-										>{fmtDue(t.due_date)}</Badge
-									>
+									<Badge variant="secondary" class="shrink-0 text-[10px]">{fmtDue(t.due_date)}</Badge>
 								{/if}
 							</li>
 						{/each}
@@ -307,7 +391,6 @@
 					<Button href="/sleep" variant="ghost" size="sm">Log</Button>
 				</div>
 
-				<!-- Headline: last night, 3-day rolling avg, delta vs range avg -->
 				<div class="flex flex-wrap items-end gap-x-6 gap-y-2">
 					<div class="space-y-0.5">
 						<div class="text-[10px] tracking-widest text-muted-foreground uppercase">
@@ -344,9 +427,8 @@
 					</div>
 				</div>
 
-				<!-- Range pills -->
 				<div role="tablist" aria-label="Sleep range" class="flex gap-1">
-					{#each (Object.keys(RANGE_DAYS) as SleepRange[]) as r (r)}
+					{#each Object.keys(RANGE_DAYS) as SleepRange[] as r (r)}
 						{@const active = r === sleepRange}
 						<button
 							type="button"
@@ -372,7 +454,14 @@
 					</p>
 				{:else}
 					<div class="space-y-2">
-						<div class="relative h-[180px] w-full pr-8 sm:h-[220px]">
+						<div
+							bind:this={chartEl}
+							class="relative h-[180px] w-full pr-8 sm:h-[220px]"
+							onpointermove={onPointerMove}
+							onpointerleave={onPointerLeave}
+							role="application"
+							aria-label="Sleep chart — hover to see per-night details"
+						>
 							<svg
 								viewBox="0 0 100 100"
 								preserveAspectRatio="none"
@@ -393,8 +482,8 @@
 										<line
 											x1="0"
 											x2="100"
-											y1={yPct(g, sleepYRange)}
-											y2={yPct(g, sleepYRange)}
+											y1={yPct(g)}
+											y2={yPct(g)}
 											stroke="currentColor"
 											stroke-opacity="0.08"
 											stroke-width="0.4"
@@ -408,8 +497,8 @@
 									<line
 										x1="0"
 										x2="100"
-										y1={yPct(sleepAvg, sleepYRange)}
-										y2={yPct(sleepAvg, sleepYRange)}
+										y1={yPct(sleepAvg)}
+										y2={yPct(sleepAvg)}
 										stroke="currentColor"
 										stroke-width="0.5"
 										stroke-dasharray="2 2"
@@ -418,71 +507,76 @@
 									/>
 								{/if}
 
-								<!-- Filled area under the line, per consecutive segment -->
-								{#each sleepSegments as seg, i (`fill-${i}`)}
-									{#if seg.length >= 2}
-										{@const xs = seg.map((p) => xPct(p.index, sleepDays))}
-										{@const ys = seg.map((p) => yPct(p.hours, sleepYRange))}
-										{@const path = `M ${xs[0]},100 L ${xs
-											.map((x, j) => `${x},${ys[j]}`)
-											.join(' L ')} L ${xs[xs.length - 1]},100 Z`}
-										<path
-											d={path}
-											fill="url(#sleepFill)"
-											class="text-emerald-500"
-										/>
-									{/if}
-								{/each}
-
-								<!-- Line per consecutive segment -->
-								{#each sleepSegments as seg, i (`line-${i}`)}
-									{#if seg.length >= 2}
-										<polyline
-											points={seg
-												.map((p) => `${xPct(p.index, sleepDays)},${yPct(p.hours, sleepYRange)}`)
-												.join(' ')}
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.6"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											class="text-emerald-600 dark:text-emerald-400"
-											vector-effect="non-scaling-stroke"
-										/>
-									{/if}
-								{/each}
-
-								<!-- Single soft halo + dot at the most recent point — Google
-									Finance-style "current value" marker, instead of dotting
-									every day. -->
-								{#if sleepPoints.length > 0}
-									{@const last = sleepPoints[sleepPoints.length - 1]}
-									<circle
-										cx={xPct(last.index, sleepDays)}
-										cy={yPct(last.hours, sleepYRange)}
-										r="3.6"
+								<!-- Filled area under the continuous line -->
+								{#if sleepPoints.length >= 2}
+									{@const xs = sleepPoints.map((p) => xPct(p.index))}
+									{@const ys = sleepPoints.map((p) => yPct(p.hours))}
+									<path
+										d={`M ${xs[0]},100 L ${xs.map((x, j) => `${x},${ys[j]}`).join(' L ')} L ${xs[xs.length - 1]},100 Z`}
+										fill="url(#sleepFill)"
 										class="text-emerald-500"
+									/>
+								{/if}
+
+								<!-- Single continuous polyline through every logged point — gaps
+									in the calendar collapse here so the line stays unbroken. -->
+								{#if sleepPoints.length >= 2}
+									<polyline
+										points={sleepPoints.map((p) => `${xPct(p.index)},${yPct(p.hours)}`).join(' ')}
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.6"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="text-emerald-600 dark:text-emerald-400"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/if}
+
+								<!-- Subtle dot at every logged point. -->
+								{#each sleepPoints as p (p.date)}
+									<circle
+										cx={xPct(p.index)}
+										cy={yPct(p.hours)}
+										r="1.4"
 										fill="currentColor"
-										fill-opacity="0.18"
+										class="text-emerald-600 dark:text-emerald-400"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/each}
+
+								<!-- Hover crosshair + halo -->
+								{#if hovered}
+									<line
+										x1={xPct(hovered.index)}
+										x2={xPct(hovered.index)}
+										y1="0"
+										y2="100"
+										stroke="currentColor"
+										stroke-opacity="0.25"
+										stroke-width="0.5"
+										vector-effect="non-scaling-stroke"
 									/>
 									<circle
-										cx={xPct(last.index, sleepDays)}
-										cy={yPct(last.hours, sleepYRange)}
-										r="1.6"
-										class="text-emerald-600 dark:text-emerald-400"
-										fill="currentColor"
+										cx={xPct(hovered.index)}
+										cy={yPct(hovered.hours)}
+										r="3.4"
+										fill={sleepBandColor(hovered.hours)}
+										fill-opacity="0.25"
+									/>
+									<circle
+										cx={xPct(hovered.index)}
+										cy={yPct(hovered.hours)}
+										r="2"
+										fill={sleepBandColor(hovered.hours)}
 										stroke="white"
-										stroke-width="0.6"
+										stroke-width="0.8"
 										vector-effect="non-scaling-stroke"
-									>
-										<title
-											>{last.date}: {last.hours}h ({sleepBandLabel(last.hours)})</title
-										>
-									</circle>
+									/>
 								{/if}
 							</svg>
 
-							<!-- Y-axis labels (right edge, outside the plot) -->
+							<!-- Y-axis labels -->
 							<div
 								class="pointer-events-none absolute top-0 right-0 h-full w-7 text-[10px] tabular-nums text-muted-foreground"
 							>
@@ -490,22 +584,60 @@
 									{#if g >= sleepYRange.min && g <= sleepYRange.max}
 										<span
 											class="absolute right-0 -translate-y-1/2 pl-1"
-											style={`top: ${yPct(g, sleepYRange)}%`}>{g}h</span
+											style={`top: ${yPct(g)}%`}>{g}h</span
 										>
 									{/if}
 								{/each}
 							</div>
+
+							<!-- Hover popover -->
+							{#if hovered}
+								{@const left = xPct(hovered.index)}
+								{@const flip = left > 60}
+								<div
+									class="pointer-events-none absolute z-10 w-[180px] rounded-lg border bg-popover p-2.5 text-xs text-popover-foreground shadow-md"
+									style={`top: ${Math.min(yPct(hovered.hours), 75)}%; left: calc(${left}% + ${flip ? '-12px' : '12px'}); transform: translate(${flip ? '-100%' : '0'}, -50%);`}
+									role="tooltip"
+								>
+									<div class="text-[10px] tracking-widest text-muted-foreground uppercase">
+										{fmtFull(hovered.date)}
+									</div>
+									<div class="mt-0.5 flex items-baseline gap-1.5">
+										<span class="text-lg font-semibold tabular-nums">{hovered.hours}h</span>
+										<span
+											class="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+											style={`background:${sleepBandColor(hovered.hours)}`}
+										>
+											{sleepBandLabel(hovered.hours)}
+										</span>
+									</div>
+									{#if hovered.quality !== null}
+										<div class="mt-1 text-muted-foreground">
+											Quality <span class="text-foreground tabular-nums"
+												>{hovered.quality}/10</span
+											>
+										</div>
+									{/if}
+									{#if hovered.notes}
+										<div
+											class="mt-1 line-clamp-3 border-t border-border/60 pt-1 text-muted-foreground"
+										>
+											{hovered.notes}
+										</div>
+									{/if}
+								</div>
+							{/if}
 						</div>
 
 						<!-- X-axis: range start → range end -->
 						<div
 							class="flex items-center justify-between pr-8 text-[10px] tabular-nums text-muted-foreground"
 						>
-							<span>{fmtRangeStart()}</span>
+							<span>{fmtFull(sleepSeries[0].date)}</span>
 							{#if sleepAvg !== null}
 								<span>avg {sleepAvg.toFixed(1)}h</span>
 							{/if}
-							<span>{fmtRangeEnd()}</span>
+							<span>{fmtFull(sleepSeries[sleepSeries.length - 1].date)}</span>
 						</div>
 
 						<!-- Stats strip + legend -->
@@ -562,6 +694,37 @@
 					{formatMoney(finance.net, 'AUD', { showSign: true })}
 				</div>
 				<div class="text-xs text-muted-foreground">{finance.yearMonth} · net</div>
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header class="flex-row items-center justify-between">
+				<div class="flex items-center gap-2">
+					<StickyNote class="size-4" />
+					<Card.Title class="text-base">Recent notes</Card.Title>
+				</div>
+				<Button href="/journal" variant="ghost" size="sm">All</Button>
+			</Card.Header>
+			<Card.Content>
+				{#if recentNotes.length === 0}
+					<p class="text-sm text-muted-foreground">
+						No quick notes. <a class="underline" href="/journal">Pin one</a>.
+					</p>
+				{:else}
+					<ul class="space-y-1 text-sm">
+						{#each recentNotes as n (n.id)}
+							<li class="flex items-start gap-2">
+								<span
+									class="mt-1.5 inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/60"
+									aria-hidden="true"
+								></span>
+								<a href="/journal" class="min-w-0 flex-1 truncate hover:underline">
+									<span class="font-medium">{n.title}</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</Card.Content>
 		</Card.Root>
 	</div>

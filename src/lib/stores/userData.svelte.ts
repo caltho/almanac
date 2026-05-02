@@ -148,6 +148,11 @@ export type ChecklistItem = Pick<
 	'id' | 'checklist_id' | 'title' | 'checked' | 'order_index'
 >;
 
+export type QuickNote = Pick<
+	T['quick_notes']['Row'],
+	'id' | 'owner_id' | 'title' | 'body' | 'color' | 'internalised' | 'created_at' | 'updated_at'
+>;
+
 export type Activity = Pick<
 	T['activities']['Row'],
 	'id' | 'owner_id' | 'name' | 'color' | 'order_index' | 'updated_at'
@@ -176,6 +181,7 @@ export type HotData = {
 	recipes: Recipe[];
 	checklists: Checklist[];
 	checklistItems: ChecklistItem[];
+	quickNotes: QuickNote[];
 	hydratedAt: number;
 };
 
@@ -200,6 +206,7 @@ export class UserData {
 	recipes = $state<Recipe[]>([]);
 	checklists = $state<Checklist[]>([]);
 	checklistItems = $state<ChecklistItem[]>([]);
+	quickNotes = $state<QuickNote[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -223,7 +230,20 @@ export class UserData {
 		this.recipes = seed.recipes;
 		this.checklists = seed.checklists;
 		this.checklistItems = seed.checklistItems;
+		this.quickNotes = seed.quickNotes;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Quick notes ---------------------------------------------------------
+	addQuickNote(n: QuickNote) {
+		this.quickNotes = [n, ...this.quickNotes];
+	}
+	updateQuickNote(id: string, patch: Partial<QuickNote>) {
+		const i = this.quickNotes.findIndex((n) => n.id === id);
+		if (i >= 0) this.quickNotes[i] = { ...this.quickNotes[i], ...patch };
+	}
+	removeQuickNote(id: string) {
+		this.quickNotes = this.quickNotes.filter((n) => n.id !== id);
 	}
 
 	// --- Recipes -------------------------------------------------------------
