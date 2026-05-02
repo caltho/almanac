@@ -648,17 +648,9 @@
 									/>
 								{/if}
 
-								<!-- Subtle dot at every logged point. -->
-								{#each sleepPoints as p (p.date)}
-									<circle
-										cx={xPct(p.index)}
-										cy={yPct(p.hours)}
-										r="1.4"
-										fill="currentColor"
-										class="text-emerald-600 dark:text-emerald-400"
-										vector-effect="non-scaling-stroke"
-									/>
-								{/each}
+								<!-- No static dots. Google Finance / Google Charts default
+									for line and area charts is markers-on-hover-only — the
+									crosshair + halo below is the only point indicator. -->
 
 								<!-- Hover crosshair + halo -->
 								{#if hovered}
