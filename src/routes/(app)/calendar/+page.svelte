@@ -99,6 +99,32 @@
 	const selectedEvents = $derived(eventsByDay.get(selectedIso) ?? []);
 	const selectedBirthdays = $derived(birthdaysFor(selectedDate));
 
+	// Upcoming birthdays: next occurrence regardless of stored year. Capped at
+	// 5 so the side panel doesn't overflow the screen.
+	function nextOccurrence(b: { month: number; day: number }): Date {
+		const cand = new Date(today.getFullYear(), b.month - 1, b.day);
+		if (cand < today) cand.setFullYear(cand.getFullYear() + 1);
+		return cand;
+	}
+	function daysUntil(b: { month: number; day: number }): number {
+		return Math.round((nextOccurrence(b).getTime() - today.getTime()) / 86400000);
+	}
+	function fmtCountdown(d: number) {
+		if (d === 0) return 'Today!';
+		if (d === 1) return 'Tomorrow';
+		if (d < 30) return `in ${d} day${d === 1 ? '' : 's'}`;
+		const weeks = Math.round(d / 7);
+		if (d < 60) return `in ${weeks} weeks`;
+		const months = Math.round(d / 30);
+		return `in ${months} month${months === 1 ? '' : 's'}`;
+	}
+	const upcomingBirthdays = $derived(
+		userData.birthdays
+			.slice()
+			.sort((a, b) => nextOccurrence(a).getTime() - nextOccurrence(b).getTime())
+			.slice(0, 5)
+	);
+
 	const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	function fmtTime(iso: string, allDay: boolean) {
@@ -267,6 +293,35 @@
 								{#if b.notes}
 									<p class="text-xs text-muted-foreground">{b.notes}</p>
 								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		{#if upcomingBirthdays.length > 0}
+			<section class="space-y-1.5 border-t border-border/60 pt-4">
+				<h3 class="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+					Upcoming birthdays
+				</h3>
+				<ul class="space-y-1.5">
+					{#each upcomingBirthdays as b (b.id)}
+						{@const hex = paletteHex(b.color) ?? '#CC79A7'}
+						{@const days = daysUntil(b)}
+						<li class="flex items-center gap-2 rounded-md border p-2">
+							<span
+								class="grid size-7 shrink-0 place-items-center rounded-full text-base"
+								style={`background:${hex}1A`}
+								aria-hidden="true"
+							>
+								🎂
+							</span>
+							<div class="min-w-0 flex-1">
+								<div class="truncate text-sm font-medium leading-snug">{b.name}</div>
+								<div class="text-xs tabular-nums text-muted-foreground">
+									{fmtCountdown(days)}
+								</div>
 							</div>
 						</li>
 					{/each}
