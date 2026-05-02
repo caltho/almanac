@@ -179,17 +179,27 @@
 	const sleepPoints = $derived.by(() => {
 		const cutoff = sleepSeries[0]?.date ?? '';
 		const positions = new Map(sleepSeries.map((s) => [s.date, s.index]));
-		return userData.sleepLogs
-			.filter(
-				(s): s is typeof s & { hours_slept: number } =>
-					typeof s.hours_slept === 'number' && s.log_date >= cutoff
-			)
-			.map((s) => ({
-				date: s.log_date,
-				index: positions.get(s.log_date) ?? 0,
-				hours: s.hours_slept,
-				quality: s.quality ?? null,
-				notes: s.notes ?? null
+		// Dedupe by date — sleep_logs has no unique (owner_id, log_date)
+		// constraint, so double-logged nights would otherwise produce
+		// duplicate keys in the chart's {#each} blocks. Most recent
+		// wins because the loader sorts log_date desc and we hit the
+		// map's set() in that order, then prefer the freshest updated_at.
+		const byDate = new Map<string, { row: typeof userData.sleepLogs[number]; ts: string }>();
+		for (const s of userData.sleepLogs) {
+			if (typeof s.hours_slept !== 'number') continue;
+			if (s.log_date < cutoff) continue;
+			const existing = byDate.get(s.log_date);
+			if (!existing || s.updated_at > existing.ts) {
+				byDate.set(s.log_date, { row: s, ts: s.updated_at });
+			}
+		}
+		return [...byDate.values()]
+			.map(({ row }) => ({
+				date: row.log_date,
+				index: positions.get(row.log_date) ?? 0,
+				hours: row.hours_slept as number,
+				quality: row.quality ?? null,
+				notes: row.notes ?? null
 			}))
 			.sort((a, b) => a.index - b.index) satisfies SleepPoint[];
 	});
