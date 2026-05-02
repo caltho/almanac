@@ -7,6 +7,18 @@
 
 	const userData = useUserData();
 
+	// Local-date ISO formatter. .toISOString() converts to UTC, which means
+	// for users in positive offsets (e.g. Sydney UTC+10), a Date pinned to
+	// local midnight has a UTC date one day earlier — events would then bucket
+	// into the wrong calendar cell. Format from the Date's local fields
+	// instead so the grid cell ISO and the event bucket key always agree.
+	function localIso(d: Date): string {
+		const y = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		return `${y}-${m}-${day}`;
+	}
+
 	// Selected month — defaults to current. Stored as a Date pinned to day 1.
 	const today = (() => {
 		const t = new Date();
@@ -50,7 +62,7 @@
 				d.setDate(start.getDate() + r * 7 + c);
 				row.push({
 					date: d,
-					iso: d.toISOString().slice(0, 10),
+					iso: localIso(d),
 					inMonth: d.getMonth() === viewMonth
 				});
 			}
@@ -65,7 +77,9 @@
 	const eventsByDay = $derived.by(() => {
 		const map = new Map<string, typeof userData.events>();
 		for (const e of userData.events) {
-			const iso = e.start_at.slice(0, 10);
+			// Bucket by the user's *local* date — not the UTC slice — so
+			// timezone-shifted events don't drift into a neighbour cell.
+			const iso = localIso(new Date(e.start_at));
 			const list = map.get(iso) ?? [];
 			list.push(e);
 			map.set(iso, list);
@@ -91,7 +105,7 @@
 
 	// Selected day — default to today, click any cell to refocus the side
 	// panel. Stored as ISO so $derived recomputes cleanly.
-	let selectedIso = $state(today.toISOString().slice(0, 10));
+	let selectedIso = $state(localIso(today));
 	const selectedDate = $derived.by(() => {
 		const [y, m, d] = selectedIso.split('-').map(Number);
 		return new Date(y, m - 1, d);
@@ -175,7 +189,7 @@
 				{#each row as cell (cell.iso)}
 					{@const evs = eventsByDay.get(cell.iso) ?? []}
 					{@const bds = birthdaysFor(cell.date)}
-					{@const isToday = cell.iso === today.toISOString().slice(0, 10)}
+					{@const isToday = cell.iso === localIso(today)}
 					{@const isSelected = cell.iso === selectedIso}
 					<button
 						type="button"
