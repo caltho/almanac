@@ -136,6 +136,45 @@ export type Database = {
         }
         Relationships: []
       }
+      birthdays: {
+        Row: {
+          color: string | null
+          created_at: string
+          day: number
+          id: string
+          month: number
+          name: string
+          notes: string | null
+          owner_id: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          day: number
+          id?: string
+          month: number
+          name: string
+          notes?: string | null
+          owner_id: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          day?: number
+          id?: string
+          month?: number
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           amount: number
@@ -389,6 +428,51 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          all_day: boolean
+          color: string | null
+          created_at: string
+          custom: Json
+          description: string | null
+          end_at: string | null
+          id: string
+          location: string | null
+          owner_id: string
+          start_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          color?: string | null
+          created_at?: string
+          custom?: Json
+          description?: string | null
+          end_at?: string | null
+          id?: string
+          location?: string | null
+          owner_id: string
+          start_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          color?: string | null
+          created_at?: string
+          custom?: Json
+          description?: string | null
+          end_at?: string | null
+          id?: string
+          location?: string | null
+          owner_id?: string
+          start_at?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []

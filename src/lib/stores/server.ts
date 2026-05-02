@@ -58,7 +58,9 @@ export async function loadHotData(
 		{ data: recipes },
 		{ data: checklists },
 		{ data: checklistItems },
-		{ data: quickNotes }
+		{ data: quickNotes },
+		{ data: events },
+		{ data: birthdays }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -163,7 +165,21 @@ export async function loadHotData(
 		supabase
 			.from('quick_notes')
 			.select('id, owner_id, title, body, color, internalised, created_at, updated_at')
-			.order('created_at', { ascending: false })
+			.order('created_at', { ascending: false }),
+		// Events: load 30 days back through indefinite future. Past 30d gives
+		// the month view enough context to render the previous month's tail.
+		supabase
+			.from('events')
+			.select(
+				'id, owner_id, title, description, start_at, end_at, all_day, location, color, custom, updated_at'
+			)
+			.gte('start_at', isoDaysAgo(30))
+			.order('start_at', { ascending: true }),
+		supabase
+			.from('birthdays')
+			.select('id, owner_id, name, month, day, year, notes, color, updated_at')
+			.order('month', { ascending: true })
+			.order('day', { ascending: true })
 	]);
 
 	return {
@@ -188,6 +204,8 @@ export async function loadHotData(
 		checklists: checklists ?? [],
 		checklistItems: checklistItems ?? [],
 		quickNotes: quickNotes ?? [],
+		events: events ?? [],
+		birthdays: birthdays ?? [],
 		hydratedAt: Date.now()
 	};
 }

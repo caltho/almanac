@@ -153,6 +153,26 @@ export type QuickNote = Pick<
 	'id' | 'owner_id' | 'title' | 'body' | 'color' | 'internalised' | 'created_at' | 'updated_at'
 >;
 
+export type CalendarEvent = Pick<
+	T['events']['Row'],
+	| 'id'
+	| 'owner_id'
+	| 'title'
+	| 'description'
+	| 'start_at'
+	| 'end_at'
+	| 'all_day'
+	| 'location'
+	| 'color'
+	| 'custom'
+	| 'updated_at'
+>;
+
+export type Birthday = Pick<
+	T['birthdays']['Row'],
+	'id' | 'owner_id' | 'name' | 'month' | 'day' | 'year' | 'notes' | 'color' | 'updated_at'
+>;
+
 export type Activity = Pick<
 	T['activities']['Row'],
 	'id' | 'owner_id' | 'name' | 'color' | 'order_index' | 'updated_at'
@@ -182,6 +202,8 @@ export type HotData = {
 	checklists: Checklist[];
 	checklistItems: ChecklistItem[];
 	quickNotes: QuickNote[];
+	events: CalendarEvent[];
+	birthdays: Birthday[];
 	hydratedAt: number;
 };
 
@@ -207,6 +229,8 @@ export class UserData {
 	checklists = $state<Checklist[]>([]);
 	checklistItems = $state<ChecklistItem[]>([]);
 	quickNotes = $state<QuickNote[]>([]);
+	events = $state<CalendarEvent[]>([]);
+	birthdays = $state<Birthday[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -231,7 +255,31 @@ export class UserData {
 		this.checklists = seed.checklists;
 		this.checklistItems = seed.checklistItems;
 		this.quickNotes = seed.quickNotes;
+		this.events = seed.events;
+		this.birthdays = seed.birthdays;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Calendar ------------------------------------------------------------
+	addEvent(e: CalendarEvent) {
+		this.events = [...this.events, e];
+	}
+	updateEvent(id: string, patch: Partial<CalendarEvent>) {
+		const i = this.events.findIndex((e) => e.id === id);
+		if (i >= 0) this.events[i] = { ...this.events[i], ...patch };
+	}
+	removeEvent(id: string) {
+		this.events = this.events.filter((e) => e.id !== id);
+	}
+	addBirthday(b: Birthday) {
+		this.birthdays = [...this.birthdays, b];
+	}
+	updateBirthday(id: string, patch: Partial<Birthday>) {
+		const i = this.birthdays.findIndex((b) => b.id === id);
+		if (i >= 0) this.birthdays[i] = { ...this.birthdays[i], ...patch };
+	}
+	removeBirthday(id: string) {
+		this.birthdays = this.birthdays.filter((b) => b.id !== id);
 	}
 
 	// --- Quick notes ---------------------------------------------------------

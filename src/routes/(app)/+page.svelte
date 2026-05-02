@@ -4,13 +4,20 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { formatMoney, currentYearMonth, monthRange } from '$lib/finance';
 	import BookOpen from '@lucide/svelte/icons/book-open';
+	import CalendarDays from '@lucide/svelte/icons/calendar-days';
 	import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
 	import Check from '@lucide/svelte/icons/check';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Repeat from '@lucide/svelte/icons/repeat';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import Wallet from '@lucide/svelte/icons/wallet';
-	import { useUserData, type Habit } from '$lib/stores/userData.svelte';
+	import { paletteHex } from '$lib/palette';
+	import {
+		useUserData,
+		type Birthday,
+		type CalendarEvent,
+		type Habit
+	} from '$lib/stores/userData.svelte';
 
 	let { data } = $props();
 	const userData = useUserData();
@@ -35,6 +42,56 @@
 			.sort((a, b) => b.created_at.localeCompare(a.created_at))
 			.slice(0, 5)
 	);
+
+	// --- Upcoming (events + birthdays merged on next-occurrence) ------------
+	type UpcomingItem =
+		| { kind: 'event'; at: Date; event: CalendarEvent }
+		| { kind: 'birthday'; at: Date; birthday: Birthday };
+
+	const startOfToday = (() => {
+		const t = new Date();
+		t.setHours(0, 0, 0, 0);
+		return t;
+	})();
+
+	function nextBirthdayDate(b: Birthday): Date {
+		const cand = new Date(startOfToday.getFullYear(), b.month - 1, b.day);
+		if (cand < startOfToday) cand.setFullYear(cand.getFullYear() + 1);
+		return cand;
+	}
+
+	const upcomingItems = $derived.by((): UpcomingItem[] => {
+		const items: UpcomingItem[] = [];
+		const horizon = new Date(startOfToday);
+		horizon.setDate(horizon.getDate() + 30);
+		for (const e of userData.events) {
+			const at = new Date(e.start_at);
+			if (at < startOfToday) continue;
+			items.push({ kind: 'event', at, event: e });
+		}
+		for (const b of userData.birthdays) {
+			const at = nextBirthdayDate(b);
+			if (at > horizon) continue;
+			items.push({ kind: 'birthday', at, birthday: b });
+		}
+		items.sort((a, b) => a.at.getTime() - b.at.getTime());
+		return items.slice(0, 6);
+	});
+
+	function fmtUpcoming(at: Date) {
+		const days = Math.round((at.getTime() - startOfToday.getTime()) / 86400000);
+		if (days === 0) return 'Today';
+		if (days === 1) return 'Tomorrow';
+		if (days < 7) {
+			return at.toLocaleDateString(undefined, { weekday: 'long' });
+		}
+		return at.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+	}
+	function fmtUpcomingTime(item: UpcomingItem) {
+		if (item.kind === 'birthday') return null;
+		if (item.event.all_day) return null;
+		return item.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+	}
 	const openTasks = $derived(
 		userData.tasks
 			.filter((t) => t.status === 'todo' || t.status === 'doing')
@@ -374,6 +431,54 @@
 								{#if t.due_date}
 									<Badge variant="secondary" class="shrink-0 text-[10px]">{fmtDue(t.due_date)}</Badge>
 								{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root class="md:col-span-2">
+			<Card.Header class="flex-row items-center justify-between">
+				<div class="flex items-center gap-2">
+					<CalendarDays class="size-4" />
+					<Card.Title class="text-base">Upcoming</Card.Title>
+				</div>
+				<Button href="/calendar" variant="ghost" size="sm">Calendar</Button>
+			</Card.Header>
+			<Card.Content>
+				{#if upcomingItems.length === 0}
+					<p class="text-sm text-muted-foreground">
+						Nothing coming up. <a class="underline" href="/calendar/events">Add an event</a> or
+						<a class="underline" href="/calendar/birthdays">a birthday</a>.
+					</p>
+				{:else}
+					<ul class="-my-1 divide-y divide-border">
+						{#each upcomingItems as item (item.kind + ':' + (item.kind === 'event' ? item.event.id : item.birthday.id))}
+							{@const hex =
+								item.kind === 'event'
+									? (paletteHex(item.event.color) ?? '#0072B2')
+									: (paletteHex(item.birthday.color) ?? '#CC79A7')}
+							<li class="flex items-start gap-3 py-2 text-sm">
+								<span
+									class="mt-1.5 size-2 shrink-0 rounded-full"
+									style={`background:${hex}`}
+									aria-hidden="true"
+								></span>
+								<div class="min-w-0 flex-1">
+									<div class="truncate font-medium leading-snug">
+										{#if item.kind === 'birthday'}🎂 {item.birthday.name}{:else}{item.event.title}{/if}
+									</div>
+									{#if item.kind === 'event' && item.event.location}
+										<div class="truncate text-xs text-muted-foreground">{item.event.location}</div>
+									{/if}
+								</div>
+								<div class="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+									<div>{fmtUpcoming(item.at)}</div>
+									{#if fmtUpcomingTime(item)}
+										<div class="text-[10px]">{fmtUpcomingTime(item)}</div>
+									{/if}
+								</div>
 							</li>
 						{/each}
 					</ul>
