@@ -29,15 +29,13 @@
 	let editing = $state(false);
 
 	// --- date helpers ----------------------------------------------------
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const todayIso = today.toISOString().slice(0, 10);
+	import { localIso, localMidnight, dateFromIso, addDays } from '$lib/dates';
+
+	const today = localMidnight();
+	const todayIso = localIso(today);
 
 	let selectedIso = $state(todayIso);
-	const selectedDate = $derived.by(() => {
-		const [y, m, d] = selectedIso.split('-').map(Number);
-		return new Date(y, m - 1, d);
-	});
+	const selectedDate = $derived(dateFromIso(selectedIso));
 	const isToday = $derived(selectedIso === todayIso);
 	const selectedLabel = $derived(
 		selectedDate.toLocaleDateString(undefined, {
@@ -46,15 +44,6 @@
 			month: 'long'
 		})
 	);
-
-	function iso(d: Date): string {
-		return d.toISOString().slice(0, 10);
-	}
-	function addDays(d: Date, n: number): Date {
-		const out = new Date(d);
-		out.setDate(out.getDate() + n);
-		return out;
-	}
 
 	// --- habit-status calculations --------------------------------------
 
@@ -84,9 +73,11 @@
 			start.setDate(start.getDate() - (dow - 1));
 			const end = new Date(start);
 			end.setDate(end.getDate() + 6);
-			const startIso = iso(start);
-			const endIso = iso(end);
-			return !checks.some((c) => c.check_date >= startIso && c.check_date <= endIso);
+			const startIsoLocal = localIso(start);
+			const endIsoLocal = localIso(end);
+			return !checks.some(
+				(c) => c.check_date >= startIsoLocal && c.check_date <= endIsoLocal
+			);
 		}
 		if (cadence === 'monthly') {
 			const y = sel.getFullYear();
@@ -112,7 +103,7 @@
 				const dow = d.getDay();
 				if (dow === 0 || dow === 6) continue;
 			}
-			if (dates.has(iso(d))) n++;
+			if (dates.has(localIso(d))) n++;
 			else break;
 			if (n > 365) break;
 		}

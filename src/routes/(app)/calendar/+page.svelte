@@ -5,19 +5,9 @@
 	import { paletteHex } from '$lib/palette';
 	import { useUserData } from '$lib/stores/userData.svelte';
 
-	const userData = useUserData();
+	import { localIso } from '$lib/dates';
 
-	// Local-date ISO formatter. .toISOString() converts to UTC, which means
-	// for users in positive offsets (e.g. Sydney UTC+10), a Date pinned to
-	// local midnight has a UTC date one day earlier — events would then bucket
-	// into the wrong calendar cell. Format from the Date's local fields
-	// instead so the grid cell ISO and the event bucket key always agree.
-	function localIso(d: Date): string {
-		const y = d.getFullYear();
-		const m = String(d.getMonth() + 1).padStart(2, '0');
-		const day = String(d.getDate()).padStart(2, '0');
-		return `${y}-${m}-${day}`;
-	}
+	const userData = useUserData();
 
 	// Selected month — defaults to current. Stored as a Date pinned to day 1.
 	const today = (() => {

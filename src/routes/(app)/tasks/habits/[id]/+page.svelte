@@ -8,8 +8,24 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { AttrsEditor } from '$lib/custom-attrs';
 	import BackButton from '$lib/components/BackButton.svelte';
+	import { localIso, localMidnight } from '$lib/dates';
 
 	let { data, form } = $props();
+
+	// Streak runs client-side so it uses the viewer's local "today" rather
+	// than the server's UTC clock.
+	const streak = $derived.by(() => {
+		const tickDates = new Set(data.checks.map((c) => c.check_date));
+		const today = localMidnight();
+		let n = 0;
+		for (let i = 0; i < 3650; i++) {
+			const d = new Date(today);
+			d.setDate(d.getDate() - i);
+			if (tickDates.has(localIso(d))) n++;
+			else if (i > 0) break;
+		}
+		return n;
+	});
 
 	const CADENCES = [
 		{ value: 'daily', label: 'Daily' },
@@ -45,7 +61,7 @@
 			<h1 class="text-2xl font-semibold tracking-tight">{data.habit.name}</h1>
 			<div class="flex gap-2">
 				<Badge variant="secondary">{data.habit.cadence}</Badge>
-				<Badge variant="outline">🔥 {data.streak}-day streak</Badge>
+				<Badge variant="outline">🔥 {streak}-day streak</Badge>
 				<Badge variant="outline">{data.checks.length} total ticks</Badge>
 			</div>
 		</div>

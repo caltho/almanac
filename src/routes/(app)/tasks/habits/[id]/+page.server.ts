@@ -21,26 +21,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	if (!habit) throw error(404, 'Habit not found');
 
-	const tickDates = new Set((checks ?? []).map((c) => c.check_date));
-	let streak = 0;
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	for (let i = 0; i < 3650; i++) {
-		const d = new Date(today);
-		d.setDate(d.getDate() - i);
-		const iso = d.toISOString().slice(0, 10);
-		if (tickDates.has(iso)) {
-			streak++;
-		} else if (i > 0) {
-			break;
-		}
-	}
+	// Streak compute moved to the client (see +page.svelte) so it uses the
+	// user's local "today" instead of the server's UTC clock — otherwise
+	// users in positive offsets see an off-by-one streak in the morning.
 
 	return {
 		habit,
 		checks: checks ?? [],
 		defs,
-		streak,
 		canEdit: habit.owner_id === locals.user!.id
 	};
 };

@@ -12,12 +12,14 @@
 
 	let { form } = $props();
 
+	import { localIso } from '$lib/dates';
+
 	const userData = useUserData();
 	const defs = $derived(userData.defsFor('sleep_logs'));
 
 	let values = $state<Record<string, unknown>>({});
 	let submitting = $state(false);
-	const today = new Date().toISOString().slice(0, 10);
+	const today = localIso();
 
 	let wentToBed = $state('');
 	let wokeUp = $state('');

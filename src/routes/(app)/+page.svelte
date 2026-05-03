@@ -12,6 +12,7 @@
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import Wallet from '@lucide/svelte/icons/wallet';
 	import { paletteHex } from '$lib/palette';
+	import { localIso, localMidnight } from '$lib/dates';
 	import {
 		useUserData,
 		type Birthday,
@@ -22,7 +23,7 @@
 	let { data } = $props();
 	const userData = useUserData();
 
-	const today = new Date().toISOString().slice(0, 10);
+	const today = localIso();
 	const name = $derived(data.profile?.display_name ?? data.user?.email?.split('@')[0] ?? 'you');
 
 	type Cadence = 'daily' | 'weekdays' | 'weekly' | 'monthly';
@@ -48,11 +49,7 @@
 		| { kind: 'event'; at: Date; event: CalendarEvent }
 		| { kind: 'birthday'; at: Date; birthday: Birthday };
 
-	const startOfToday = (() => {
-		const t = new Date();
-		t.setHours(0, 0, 0, 0);
-		return t;
-	})();
+	const startOfToday = localMidnight();
 
 	function nextBirthdayDate(b: Birthday): Date {
 		const cand = new Date(startOfToday.getFullYear(), b.month - 1, b.day);
@@ -123,9 +120,11 @@
 			start.setDate(start.getDate() - (dow - 1));
 			const end = new Date(start);
 			end.setDate(end.getDate() + 6);
-			const startIso = start.toISOString().slice(0, 10);
-			const endIso = end.toISOString().slice(0, 10);
-			return !checks.some((c) => c.check_date >= startIso && c.check_date <= endIso);
+			const startIsoLocal = localIso(start);
+			const endIsoLocal = localIso(end);
+			return !checks.some(
+				(c) => c.check_date >= startIsoLocal && c.check_date <= endIsoLocal
+			);
 		}
 		if (cadence === 'monthly') {
 			const y = sel.getFullYear();
@@ -165,13 +164,12 @@
 	// Chronological windowed series — used for X-axis range labels and the
 	// "X of N nights logged" stat. Logged points only feed the line.
 	const sleepSeries = $derived.by(() => {
-		const t = new Date();
-		t.setHours(0, 0, 0, 0);
+		const t = localMidnight();
 		const out: { date: string; index: number }[] = [];
 		for (let i = sleepDays - 1; i >= 0; i--) {
 			const d = new Date(t);
 			d.setDate(d.getDate() - i);
-			out.push({ date: d.toISOString().slice(0, 10), index: sleepDays - 1 - i });
+			out.push({ date: localIso(d), index: sleepDays - 1 - i });
 		}
 		return out;
 	});
@@ -225,11 +223,10 @@
 
 	const sleep3DayAvg = $derived.by(() => {
 		if (allLoggedDesc.length === 0) return null;
-		const ref = new Date();
-		ref.setHours(0, 0, 0, 0);
+		const ref = localMidnight();
 		const cutoff = new Date(ref);
 		cutoff.setDate(ref.getDate() - 2);
-		const cutoffIso = cutoff.toISOString().slice(0, 10);
+		const cutoffIso = localIso(cutoff);
 		const recent = allLoggedDesc.filter((s) => s.log_date >= cutoffIso);
 		const sample = recent.length > 0 ? recent : allLoggedDesc.slice(0, 3);
 		return sample.reduce((a, b) => a + b.hours_slept, 0) / sample.length;

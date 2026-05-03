@@ -7,12 +7,13 @@
 	import { Label } from '$lib/components/ui/label';
 	import { AttrsEditor } from '$lib/custom-attrs';
 	import BackButton from '$lib/components/BackButton.svelte';
+	import { localIso } from '$lib/dates';
 
 	let { data, form } = $props();
 
 	let values = $state<Record<string, unknown>>({});
 	let submitting = $state(false);
-	const today = new Date().toISOString().slice(0, 10);
+	const today = localIso();
 
 	const fieldErrors = $derived(
 		(form && 'fieldErrors' in form ? (form.fieldErrors as Record<string, string>) : {}) ?? {}

@@ -18,19 +18,10 @@
 		class: className = ''
 	}: Props = $props();
 
-	function isoOf(d: Date): string {
-		return d.toISOString().slice(0, 10);
-	}
-	function dateFromIso(iso: string): Date {
-		const [y, m, d] = iso.split('-').map(Number);
-		return new Date(y, m - 1, d);
-	}
+	import { localIso, localMidnight, dateFromIso } from '$lib/dates';
 
-	const today = (() => {
-		const t = new Date();
-		t.setHours(0, 0, 0, 0);
-		return t;
-	})();
+	const isoOf = localIso;
+	const today = localMidnight();
 	const todayIso = isoOf(today);
 
 	let viewEnd = $state<Date>(today);

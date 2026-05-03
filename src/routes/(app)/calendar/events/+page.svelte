@@ -11,6 +11,7 @@
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import { paletteHex, type PaletteToken } from '$lib/palette';
+	import { localIso } from '$lib/dates';
 	import { useUserData, type CalendarEvent } from '$lib/stores/userData.svelte';
 
 	const userData = useUserData();
@@ -30,7 +31,7 @@
 	// Default the new-event date to today, time to next-hour-on-the-half-hour.
 	function resetForm() {
 		const t = new Date();
-		newDate = t.toISOString().slice(0, 10);
+		newDate = localIso(t);
 		t.setMinutes(0, 0, 0);
 		t.setHours(t.getHours() + 1);
 		newTime = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;

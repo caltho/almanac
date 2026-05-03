@@ -12,6 +12,7 @@
 	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
 	import DateScroller from '$lib/components/DateScroller.svelte';
 	import { paletteHex, type PaletteToken } from '$lib/palette';
+	import { localIso, localMidnight } from '$lib/dates';
 	import {
 		useUserData,
 		type Activity as ActivityRow,
@@ -20,9 +21,8 @@
 
 	const userData = useUserData();
 
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const todayIso = today.toISOString().slice(0, 10);
+	const today = localMidnight();
+	const todayIso = localIso(today);
 
 	let selectedIso = $state(todayIso);
 	const isToday = $derived(selectedIso === todayIso);

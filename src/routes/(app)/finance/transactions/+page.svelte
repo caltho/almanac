@@ -6,6 +6,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { formatMoney } from '$lib/finance';
+	import { localIso } from '$lib/dates';
 
 	let { data, form } = $props();
 
@@ -66,7 +67,7 @@
 				<Input
 					name="posted_at"
 					type="date"
-					value={new Date().toISOString().slice(0, 10)}
+					value={localIso()}
 					required
 				/>
 			</div>
