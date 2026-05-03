@@ -53,10 +53,18 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		if (!id) return fail(400, { error: 'Missing id.' });
+		// Hard delete instead of soft-delete-via-UPDATE. The UPDATE path was
+		// hitting the WITH CHECK clause of sleep_logs_update for some
+		// existing rows (cause unclear without DB introspection). The
+		// SELECT policy already filtered deleted_at != null rows out, so
+		// soft delete was effectively a permanent hide — hard delete has
+		// the same end-user behavior and uses the simpler delete policy
+		// (owner_id = auth.uid(), no WITH CHECK).
 		const { error } = await locals.supabase
 			.from('sleep_logs')
-			.update({ deleted_at: new Date().toISOString() })
-			.eq('id', id);
+			.delete()
+			.eq('id', id)
+			.eq('owner_id', locals.user!.id);
 		if (error) return fail(500, { error: error.message });
 		return { deleted: true };
 	}
