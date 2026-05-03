@@ -652,7 +652,8 @@
 									for line and area charts is markers-on-hover-only — the
 									crosshair + halo below is the only point indicator. -->
 
-								<!-- Hover crosshair + halo -->
+								<!-- Hover crosshair only — no point marker. Popover below
+									carries the actual numbers; the giant dot was visual noise. -->
 								{#if hovered}
 									<line
 										x1={xPct(hovered.index)}
@@ -662,22 +663,6 @@
 										stroke="currentColor"
 										stroke-opacity="0.25"
 										stroke-width="0.5"
-										vector-effect="non-scaling-stroke"
-									/>
-									<circle
-										cx={xPct(hovered.index)}
-										cy={yPct(hovered.hours)}
-										r="3.4"
-										fill={sleepBandColor(hovered.hours)}
-										fill-opacity="0.25"
-									/>
-									<circle
-										cx={xPct(hovered.index)}
-										cy={yPct(hovered.hours)}
-										r="2"
-										fill={sleepBandColor(hovered.hours)}
-										stroke="white"
-										stroke-width="0.8"
 										vector-effect="non-scaling-stroke"
 									/>
 								{/if}
