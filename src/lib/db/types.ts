@@ -393,6 +393,42 @@ export type Database = {
         }
         Relationships: []
       }
+      event_people: {
+        Row: {
+          created_at: string
+          event_id: string
+          owner_id: string
+          person_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          owner_id: string
+          person_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          owner_id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_people_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_people_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           all_day: boolean
@@ -701,10 +737,12 @@ export type Database = {
           custom: Json
           email: string | null
           id: string
+          last_contacted_at: string | null
           name: string
           notes: string | null
           owner_id: string
           phone: string | null
+          tags: string[]
           updated_at: string
         }
         Insert: {
@@ -717,10 +755,12 @@ export type Database = {
           custom?: Json
           email?: string | null
           id?: string
+          last_contacted_at?: string | null
           name: string
           notes?: string | null
           owner_id: string
           phone?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Update: {
@@ -733,10 +773,12 @@ export type Database = {
           custom?: Json
           email?: string | null
           id?: string
+          last_contacted_at?: string | null
           name?: string
           notes?: string | null
           owner_id?: string
           phone?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Relationships: []

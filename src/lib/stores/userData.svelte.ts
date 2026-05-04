@@ -181,8 +181,12 @@ export type Person = Pick<
 	| 'birthday_month'
 	| 'birthday_day'
 	| 'birthday_year'
+	| 'tags'
+	| 'last_contacted_at'
 	| 'updated_at'
 >;
+
+export type EventPerson = Pick<T['event_people']['Row'], 'event_id' | 'person_id'>;
 
 export type Activity = Pick<
 	T['activities']['Row'],
@@ -215,6 +219,7 @@ export type HotData = {
 	quickNotes: QuickNote[];
 	events: CalendarEvent[];
 	people: Person[];
+	eventPeople: EventPerson[];
 	hydratedAt: number;
 };
 
@@ -242,6 +247,7 @@ export class UserData {
 	quickNotes = $state<QuickNote[]>([]);
 	events = $state<CalendarEvent[]>([]);
 	people = $state<Person[]>([]);
+	eventPeople = $state<EventPerson[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -268,7 +274,24 @@ export class UserData {
 		this.quickNotes = seed.quickNotes;
 		this.events = seed.events;
 		this.people = seed.people;
+		this.eventPeople = seed.eventPeople;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Event ↔ people junction ---------------------------------------------
+	peopleForEvent(event_id: string): Person[] {
+		const ids = new Set(
+			this.eventPeople.filter((ep) => ep.event_id === event_id).map((ep) => ep.person_id)
+		);
+		return this.people.filter((p) => ids.has(p.id));
+	}
+	setEventPeople(event_id: string, person_ids: string[]) {
+		const others = this.eventPeople.filter((ep) => ep.event_id !== event_id);
+		const next = person_ids.map((pid) => ({ event_id, person_id: pid }));
+		this.eventPeople = [...others, ...next];
+	}
+	removeEventPeopleFor(event_id: string) {
+		this.eventPeople = this.eventPeople.filter((ep) => ep.event_id !== event_id);
 	}
 
 	// --- Calendar ------------------------------------------------------------

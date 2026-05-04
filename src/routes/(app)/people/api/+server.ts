@@ -6,7 +6,22 @@ import { isPaletteToken } from '$lib/palette';
 type PersonUpdate = Database['public']['Tables']['people']['Update'];
 
 const SELECT =
-	'id, owner_id, name, email, phone, notes, color, avatar_url, birthday_month, birthday_day, birthday_year, updated_at';
+	'id, owner_id, name, email, phone, notes, color, avatar_url, birthday_month, birthday_day, birthday_year, tags, last_contacted_at, updated_at';
+
+function normaliseTags(input: unknown): string[] | null {
+	if (input === undefined) return null;
+	if (input === null) return [];
+	if (!Array.isArray(input)) return [];
+	const seen = new Set<string>();
+	for (const raw of input) {
+		if (typeof raw !== 'string') continue;
+		const t = raw.trim().toLowerCase();
+		if (!t) continue;
+		if (t.length > 32) continue;
+		seen.add(t);
+	}
+	return [...seen];
+}
 
 function validMonthDay(month: number, day: number): boolean {
 	if (!Number.isInteger(month) || month < 1 || month > 12) return false;
@@ -30,6 +45,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				birthday_month?: number | null;
 				birthday_day?: number | null;
 				birthday_year?: number | null;
+				tags?: string[];
 		  }
 		| {
 				op: 'update';
@@ -43,7 +59,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				birthday_month?: number | null;
 				birthday_day?: number | null;
 				birthday_year?: number | null;
+				tags?: string[];
 		  }
+		| { op: 'markContacted'; id: string; at?: string | null }
 		| { op: 'delete'; id: string };
 
 	if (body.op === 'create') {
@@ -61,6 +79,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 
 		const color = body.color && isPaletteToken(body.color) ? body.color : null;
+		const tags = normaliseTags(body.tags) ?? [];
 		const { data, error: e } = await locals.supabase
 			.from('people')
 			.insert({
@@ -73,7 +92,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				avatar_url: body.avatar_url ?? null,
 				birthday_month: month,
 				birthday_day: day,
-				birthday_year: body.birthday_year ?? null
+				birthday_year: body.birthday_year ?? null,
+				tags
 			})
 			.select(SELECT)
 			.single();
@@ -115,11 +135,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 		if ('birthday_year' in body) patch.birthday_year = body.birthday_year ?? null;
 
+		if ('tags' in body) {
+			const tags = normaliseTags(body.tags);
+			if (tags !== null) patch.tags = tags;
+		}
+
 		if (Object.keys(patch).length === 0) return json({ ok: true });
 
 		const { data, error: e } = await locals.supabase
 			.from('people')
 			.update(patch)
+			.eq('id', body.id)
+			.select(SELECT)
+			.single();
+		if (e) throw error(500, e.message);
+		return json({ person: data });
+	}
+
+	if (body.op === 'markContacted') {
+		if (!body.id) throw error(400, 'Missing id');
+		const at = body.at === null ? null : (body.at ?? new Date().toISOString());
+		const { data, error: e } = await locals.supabase
+			.from('people')
+			.update({ last_contacted_at: at })
 			.eq('id', body.id)
 			.select(SELECT)
 			.single();

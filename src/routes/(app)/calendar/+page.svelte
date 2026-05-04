@@ -257,6 +257,7 @@
 				<ul class="space-y-1.5">
 					{#each selectedEvents as e (e.id)}
 						{@const hex = paletteHex(e.color) ?? '#0072B2'}
+						{@const linkedPeople = userData.peopleForEvent(e.id)}
 						<li class="flex gap-2 rounded-md border p-2">
 							<span
 								class="mt-0.5 size-2 shrink-0 rounded-full"
@@ -271,6 +272,19 @@
 										· {e.location}
 									{/if}
 								</div>
+								{#if linkedPeople.length > 0}
+									<div class="flex flex-wrap gap-1 pt-0.5">
+										{#each linkedPeople as p (p.id)}
+											{@const pHex = paletteHex(p.color) ?? '#6B7280'}
+											<span
+												class="inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+												style={`background:${pHex}`}
+											>
+												{p.name}
+											</span>
+										{/each}
+									</div>
+								{/if}
 								{#if e.description}
 									<p class="text-xs text-muted-foreground">{e.description}</p>
 								{/if}

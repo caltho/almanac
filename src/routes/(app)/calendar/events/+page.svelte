@@ -26,6 +26,8 @@
 	let newLocation = $state('');
 	let newDescription = $state('');
 	let newColor = $state<PaletteToken | null>(null);
+	let newPersonIds = $state<string[]>([]);
+	let personQuery = $state('');
 	let saving = $state(false);
 
 	// Default the new-event date to today, time to next-hour-on-the-half-hour.
@@ -41,6 +43,8 @@
 		newLocation = '';
 		newDescription = '';
 		newColor = null;
+		newPersonIds = [];
+		personQuery = '';
 	}
 
 	function openNew() {
@@ -66,6 +70,8 @@
 		newLocation = e.location ?? '';
 		newDescription = e.description ?? '';
 		newColor = (e.color as PaletteToken | null) ?? null;
+		newPersonIds = userData.peopleForEvent(e.id).map((p) => p.id);
+		personQuery = '';
 		editingId = e.id;
 		showNew = true;
 	}
@@ -119,7 +125,8 @@
 			end_at,
 			all_day: newAllDay,
 			location: newLocation.trim() || null,
-			color: newColor
+			color: newColor,
+			person_ids: [...newPersonIds]
 		};
 		try {
 			const res = await fetch('/calendar/events/api', {
@@ -133,8 +140,10 @@
 			});
 			if (!res.ok) throw new Error();
 			const body = (await res.json()) as { event: CalendarEvent };
+			const eventId = editingId ?? body.event.id;
 			if (editingId) userData.updateEvent(editingId, body.event);
 			else userData.addEvent(body.event);
+			userData.setEventPeople(eventId, payload.person_ids);
 			closeForm();
 			resetForm();
 		} catch {
@@ -147,7 +156,9 @@
 	async function deleteEvent(e: CalendarEvent) {
 		if (!confirm(`Delete "${e.title}"?`)) return;
 		const prev = e;
+		const prevPeople = userData.peopleForEvent(e.id).map((p) => p.id);
 		userData.removeEvent(e.id);
+		userData.removeEventPeopleFor(e.id);
 		try {
 			const res = await fetch('/calendar/events/api', {
 				method: 'POST',
@@ -157,8 +168,23 @@
 			if (!res.ok) throw new Error();
 		} catch {
 			userData.addEvent(prev);
+			userData.setEventPeople(prev.id, prevPeople);
 		}
 	}
+
+	function togglePerson(id: string) {
+		newPersonIds = newPersonIds.includes(id)
+			? newPersonIds.filter((x) => x !== id)
+			: [...newPersonIds, id];
+	}
+
+	const personSuggestions = $derived.by(() => {
+		const q = personQuery.trim().toLowerCase();
+		const all = userData.people.slice().sort((a, b) => a.name.localeCompare(b.name));
+		const unselected = all.filter((p) => !newPersonIds.includes(p.id));
+		if (!q) return unselected.slice(0, 8);
+		return unselected.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8);
+	});
 </script>
 
 <header class="flex items-start justify-between gap-2">
@@ -215,6 +241,57 @@
 		</div>
 
 		<div class="space-y-1.5">
+			<Label for="ev-people">
+				People <span class="text-muted-foreground">(optional)</span>
+			</Label>
+			{#if newPersonIds.length > 0}
+				<div class="flex flex-wrap gap-1.5">
+					{#each newPersonIds as pid (pid)}
+						{@const p = userData.people.find((x) => x.id === pid)}
+						{#if p}
+							{@const hex = paletteHex(p.color) ?? '#6B7280'}
+							<button
+								type="button"
+								onclick={() => togglePerson(pid)}
+								class="inline-flex items-center gap-1.5 rounded-full border-2 px-2.5 py-1 text-xs font-medium text-white"
+								style={`background:${hex}; border-color:${hex}`}
+								aria-label={`Remove ${p.name}`}
+							>
+								<span>{p.name}</span>
+								<span aria-hidden="true">×</span>
+							</button>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+			<Input
+				id="ev-people"
+				bind:value={personQuery}
+				placeholder={userData.people.length === 0
+					? 'Add people first in /people'
+					: 'Search to add…'}
+				disabled={userData.people.length === 0}
+				class="h-8"
+			/>
+			{#if personSuggestions.length > 0 && (personQuery.trim() || newPersonIds.length === 0)}
+				<div class="flex flex-wrap gap-1.5">
+					{#each personSuggestions as p (p.id)}
+						<button
+							type="button"
+							onclick={() => {
+								togglePerson(p.id);
+								personQuery = '';
+							}}
+							class="rounded-full border bg-card px-2.5 py-1 text-xs hover:bg-muted/50"
+						>
+							+ {p.name}
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
+		<div class="space-y-1.5">
 			<Label class="text-xs">Color</Label>
 			<ColorPicker bind:value={newColor} label="Event color" />
 		</div>
@@ -263,6 +340,7 @@
 
 {#snippet eventRow(e: CalendarEvent)}
 	{@const hex = paletteHex(e.color) ?? '#0072B2'}
+	{@const linkedPeople = userData.peopleForEvent(e.id)}
 	<li class="flex items-start gap-3 p-3">
 		<span
 			class="mt-1 size-2.5 shrink-0 rounded-full"
@@ -277,6 +355,19 @@
 					· {e.location}
 				{/if}
 			</div>
+			{#if linkedPeople.length > 0}
+				<div class="flex flex-wrap gap-1 pt-0.5">
+					{#each linkedPeople as p (p.id)}
+						{@const pHex = paletteHex(p.color) ?? '#6B7280'}
+						<span
+							class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+							style={`background:${pHex}`}
+						>
+							{p.name}
+						</span>
+					{/each}
+				</div>
+			{/if}
 			{#if e.description}
 				<p class="pt-0.5 text-xs text-muted-foreground">{e.description}</p>
 			{/if}

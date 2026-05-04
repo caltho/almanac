@@ -1,12 +1,37 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Database } from '$lib/db/types';
+import type { SupabaseServerClient } from '$lib/db/server';
 import { isPaletteToken } from '$lib/palette';
 
 type EventUpdate = Database['public']['Tables']['events']['Update'];
 
 const SELECT =
 	'id, owner_id, title, description, start_at, end_at, all_day, location, color, custom, updated_at';
+
+// Replace the full set of person links for an event. Cheap because the
+// event_people junction has no payload — diffs aren't worth the bookkeeping
+// over a wholesale delete-then-insert, and RLS handles the boundary.
+async function syncEventPeople(
+	supabase: SupabaseServerClient,
+	ownerId: string,
+	eventId: string,
+	personIds: string[]
+): Promise<void> {
+	const { error: delErr } = await supabase
+		.from('event_people')
+		.delete()
+		.eq('event_id', eventId);
+	if (delErr) throw error(500, delErr.message);
+	if (personIds.length === 0) return;
+	const rows = personIds.map((pid) => ({
+		event_id: eventId,
+		person_id: pid,
+		owner_id: ownerId
+	}));
+	const { error: insErr } = await supabase.from('event_people').insert(rows);
+	if (insErr) throw error(500, insErr.message);
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) throw error(401);
@@ -20,6 +45,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				all_day?: boolean;
 				location?: string | null;
 				color?: string | null;
+				person_ids?: string[];
 		  }
 		| {
 				op: 'update';
@@ -31,6 +57,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				all_day?: boolean;
 				location?: string | null;
 				color?: string | null;
+				person_ids?: string[];
 		  }
 		| { op: 'delete'; id: string };
 
@@ -54,7 +81,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.select(SELECT)
 			.single();
 		if (e) throw error(500, e.message);
-		return json({ event: data });
+		if (Array.isArray(body.person_ids) && body.person_ids.length > 0) {
+			await syncEventPeople(locals.supabase, locals.user.id, data.id, body.person_ids);
+		}
+		return json({
+			event: data,
+			person_ids: Array.isArray(body.person_ids) ? body.person_ids : []
+		});
 	}
 
 	if (body.op === 'update') {
@@ -73,19 +106,44 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if ('color' in body) {
 			patch.color = body.color && isPaletteToken(body.color) ? body.color : null;
 		}
-		if (Object.keys(patch).length === 0) return json({ ok: true });
-		const { data, error: e } = await locals.supabase
-			.from('events')
-			.update(patch)
-			.eq('id', body.id)
-			.select(SELECT)
-			.single();
-		if (e) throw error(500, e.message);
-		return json({ event: data });
+		const peopleTouched = 'person_ids' in body;
+		if (Object.keys(patch).length === 0 && !peopleTouched) return json({ ok: true });
+		let updated;
+		if (Object.keys(patch).length > 0) {
+			const { data, error: e } = await locals.supabase
+				.from('events')
+				.update(patch)
+				.eq('id', body.id)
+				.select(SELECT)
+				.single();
+			if (e) throw error(500, e.message);
+			updated = data;
+		} else {
+			const { data, error: e } = await locals.supabase
+				.from('events')
+				.select(SELECT)
+				.eq('id', body.id)
+				.single();
+			if (e) throw error(500, e.message);
+			updated = data;
+		}
+		if (peopleTouched) {
+			await syncEventPeople(
+				locals.supabase,
+				locals.user.id,
+				body.id,
+				Array.isArray(body.person_ids) ? body.person_ids : []
+			);
+		}
+		return json({
+			event: updated,
+			person_ids: peopleTouched ? (body.person_ids ?? []) : null
+		});
 	}
 
 	if (body.op === 'delete') {
 		if (!body.id) throw error(400, 'Missing id');
+		// event_people junction rows cascade via the FK on event_id.
 		const { error: e } = await locals.supabase.from('events').delete().eq('id', body.id);
 		if (e) throw error(500, e.message);
 		return json({ ok: true });
