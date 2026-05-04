@@ -30,12 +30,10 @@
 	let showHistory = $state(false);
 
 	function fmtDate(d: string): string {
-		return new Date(d).toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
-		});
+		const dt = new Date(d);
+		const dd = String(dt.getDate()).padStart(2, '0');
+		const mm = String(dt.getMonth() + 1).padStart(2, '0');
+		return `${dd}/${mm}/${dt.getFullYear()}`;
 	}
 </script>
 

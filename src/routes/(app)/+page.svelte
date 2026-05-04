@@ -12,10 +12,10 @@
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import Wallet from '@lucide/svelte/icons/wallet';
 	import { paletteHex } from '$lib/palette';
-	import { localIso, localMidnight } from '$lib/dates';
+	import { fmtDate, localIso, localMidnight } from '$lib/dates';
 	import {
 		useUserData,
-		type Birthday,
+		type Person,
 		type CalendarEvent,
 		type Habit
 	} from '$lib/stores/userData.svelte';
@@ -47,12 +47,16 @@
 	// --- Upcoming (events + birthdays merged on next-occurrence) ------------
 	type UpcomingItem =
 		| { kind: 'event'; at: Date; event: CalendarEvent }
-		| { kind: 'birthday'; at: Date; birthday: Birthday };
+		| { kind: 'birthday'; at: Date; person: Person };
 
 	const startOfToday = localMidnight();
 
-	function nextBirthdayDate(b: Birthday): Date {
-		const cand = new Date(startOfToday.getFullYear(), b.month - 1, b.day);
+	function nextBirthdayDate(p: Person): Date {
+		const cand = new Date(
+			startOfToday.getFullYear(),
+			(p.birthday_month ?? 1) - 1,
+			p.birthday_day ?? 1
+		);
 		if (cand < startOfToday) cand.setFullYear(cand.getFullYear() + 1);
 		return cand;
 	}
@@ -66,10 +70,11 @@
 			if (at < startOfToday) continue;
 			items.push({ kind: 'event', at, event: e });
 		}
-		for (const b of userData.birthdays) {
-			const at = nextBirthdayDate(b);
+		for (const p of userData.people) {
+			if (p.birthday_month === null || p.birthday_day === null) continue;
+			const at = nextBirthdayDate(p);
 			if (at > horizon) continue;
-			items.push({ kind: 'birthday', at, birthday: b });
+			items.push({ kind: 'birthday', at, person: p });
 		}
 		items.sort((a, b) => a.at.getTime() - b.at.getTime());
 		return items.slice(0, 6);
@@ -82,7 +87,9 @@
 		if (days < 7) {
 			return at.toLocaleDateString(undefined, { weekday: 'long' });
 		}
-		return at.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+		const dd = String(at.getDate()).padStart(2, '0');
+		const mm = String(at.getMonth() + 1).padStart(2, '0');
+		return `${dd}/${mm}`;
 	}
 	function fmtUpcomingTime(item: UpcomingItem) {
 		if (item.kind === 'birthday') return null;
@@ -269,13 +276,6 @@
 		return ((sleepYRange.max - h) / span) * 100;
 	}
 
-	function fmtFull(date: string) {
-		return new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
-	}
 
 	// Hover/tap interaction: find the nearest logged point by X and pin the
 	// crosshair + popover there. Powered by an invisible <rect> overlay so
@@ -335,16 +335,9 @@
 		if (diff === -1) return 'Yesterday';
 		if (diff < 0) return `${-diff}d overdue`;
 		if (diff < 7) return `in ${diff}d`;
-		return date.toLocaleDateString();
+		return fmtDate(date);
 	}
 
-	function fmtDate(d: string) {
-		return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
-	}
 
 	async function toggleHabit(habit_id: string) {
 		const wasTicked = userData.habitTickedOn(habit_id, today);
@@ -461,11 +454,11 @@
 					</p>
 				{:else}
 					<ul class="-my-1 divide-y divide-border">
-						{#each upcomingItems as item (item.kind + ':' + (item.kind === 'event' ? item.event.id : item.birthday.id))}
+						{#each upcomingItems as item (item.kind + ':' + (item.kind === 'event' ? item.event.id : item.person.id))}
 							{@const hex =
 								item.kind === 'event'
 									? (paletteHex(item.event.color) ?? '#0072B2')
-									: (paletteHex(item.birthday.color) ?? '#CC79A7')}
+									: (paletteHex(item.person.color) ?? '#CC79A7')}
 							<li class="flex items-start gap-3 py-2 text-sm">
 								<span
 									class="mt-1.5 size-2 shrink-0 rounded-full"
@@ -474,7 +467,7 @@
 								></span>
 								<div class="min-w-0 flex-1">
 									<div class="truncate font-medium leading-snug">
-										{#if item.kind === 'birthday'}🎂 {item.birthday.name}{:else}{item.event.title}{/if}
+										{#if item.kind === 'birthday'}🎂 {item.person.name}{:else}{item.event.title}{/if}
 									</div>
 									{#if item.kind === 'event' && item.event.location}
 										<div class="truncate text-xs text-muted-foreground">{item.event.location}</div>
@@ -689,7 +682,7 @@
 									role="tooltip"
 								>
 									<div class="text-[10px] tracking-widest text-muted-foreground uppercase">
-										{fmtFull(hovered.date)}
+										{fmtDate(hovered.date)}
 									</div>
 									<div class="mt-0.5 flex items-baseline gap-1.5">
 										<span class="text-lg font-semibold tabular-nums">{hovered.hours}h</span>
@@ -722,11 +715,11 @@
 						<div
 							class="flex items-center justify-between pr-8 text-[10px] tabular-nums text-muted-foreground"
 						>
-							<span>{fmtFull(sleepSeries[0].date)}</span>
+							<span>{fmtDate(sleepSeries[0].date)}</span>
 							{#if sleepAvg !== null}
 								<span>avg {sleepAvg.toFixed(1)}h</span>
 							{/if}
-							<span>{fmtFull(sleepSeries[sleepSeries.length - 1].date)}</span>
+							<span>{fmtDate(sleepSeries[sleepSeries.length - 1].date)}</span>
 						</div>
 
 						<!-- Stats strip + legend -->

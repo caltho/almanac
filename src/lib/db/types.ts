@@ -136,45 +136,6 @@ export type Database = {
         }
         Relationships: []
       }
-      birthdays: {
-        Row: {
-          color: string | null
-          created_at: string
-          day: number
-          id: string
-          month: number
-          name: string
-          notes: string | null
-          owner_id: string
-          updated_at: string
-          year: number | null
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          day: number
-          id?: string
-          month: number
-          name: string
-          notes?: string | null
-          owner_id: string
-          updated_at?: string
-          year?: number | null
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          day?: number
-          id?: string
-          month?: number
-          name?: string
-          notes?: string | null
-          owner_id?: string
-          updated_at?: string
-          year?: number | null
-        }
-        Relationships: []
-      }
       budgets: {
         Row: {
           amount: number
@@ -726,6 +687,57 @@ export type Database = {
           owner_id?: string
           snapshot_date?: string
           total_value?: number
+        }
+        Relationships: []
+      }
+      people: {
+        Row: {
+          avatar_url: string | null
+          birthday_day: number | null
+          birthday_month: number | null
+          birthday_year: number | null
+          color: string | null
+          created_at: string
+          custom: Json
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
+          birthday_year?: number | null
+          color?: string | null
+          created_at?: string
+          custom?: Json
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
+          birthday_year?: number | null
+          color?: string | null
+          created_at?: string
+          custom?: Json
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

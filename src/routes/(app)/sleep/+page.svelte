@@ -31,11 +31,10 @@
 	);
 
 	function fmt(d: string) {
-		return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short'
-		});
+		const dt = new Date(d + 'T00:00:00');
+		const dd = String(dt.getDate()).padStart(2, '0');
+		const mm = String(dt.getMonth() + 1).padStart(2, '0');
+		return `${dd}/${mm}/${dt.getFullYear()}`;
 	}
 
 	/** Auto-compute hours between two HH:MM strings, assuming bed→wake crosses

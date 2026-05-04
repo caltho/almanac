@@ -5,41 +5,27 @@
 	import { Label } from '$lib/components/ui/label';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import MoreVertical from '@lucide/svelte/icons/more-vertical';
 	import Cake from '@lucide/svelte/icons/cake';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import { paletteHex, type PaletteToken } from '$lib/palette';
-	import { useUserData, type Birthday } from '$lib/stores/userData.svelte';
+	import { localMidnight } from '$lib/dates';
+	import { useUserData, type Person } from '$lib/stores/userData.svelte';
 
 	const userData = useUserData();
+	const today = localMidnight();
 
-	const today = (() => {
-		const t = new Date();
-		t.setHours(0, 0, 0, 0);
-		return t;
-	})();
-
-	let showNew = $state(false);
-	let newName = $state('');
-	let newDate = $state('');
-	let newYearKnown = $state(true);
-	let newNotes = $state('');
-	let newColor = $state<PaletteToken | null>('purple');
+	let showForm = $state(false);
+	let editingId = $state<string | null>(null);
 	let saving = $state(false);
 
-	function resetForm() {
-		newName = '';
-		newDate = '';
-		newYearKnown = true;
-		newNotes = '';
-		newColor = 'purple';
-	}
-
-	function openNew() {
-		resetForm();
-		showNew = true;
-	}
+	let fName = $state('');
+	let fDate = $state(''); // YYYY-MM-DD
+	let fYearKnown = $state(true);
+	let fNotes = $state('');
+	let fColor = $state<PaletteToken | null>('purple');
 
 	const MONTH_NAMES = [
 		'Jan',
@@ -56,31 +42,58 @@
 		'Dec'
 	];
 
-	// Compute the next occurrence of a month/day for ordering. If month/day
-	// has already passed this year, roll to next year.
-	function nextOccurrence(b: Birthday): Date {
+	function resetForm() {
+		fName = '';
+		fDate = '';
+		fYearKnown = true;
+		fNotes = '';
+		fColor = 'purple';
+	}
+	function openNew() {
+		resetForm();
+		editingId = null;
+		showForm = true;
+	}
+	function startEdit(p: Person) {
+		fName = p.name;
+		const yr = p.birthday_year ?? 2000;
+		const mm = String(p.birthday_month ?? 1).padStart(2, '0');
+		const dd = String(p.birthday_day ?? 1).padStart(2, '0');
+		fDate = `${yr}-${mm}-${dd}`;
+		fYearKnown = p.birthday_year !== null;
+		fNotes = p.notes ?? '';
+		fColor = (p.color as PaletteToken | null) ?? 'purple';
+		editingId = p.id;
+		showForm = true;
+	}
+	function closeForm() {
+		showForm = false;
+		editingId = null;
+	}
+
+	function nextOccurrence(p: { birthday_month: number | null; birthday_day: number | null }): Date {
 		const ref = new Date(today);
-		const cand = new Date(ref.getFullYear(), b.month - 1, b.day);
+		const cand = new Date(ref.getFullYear(), (p.birthday_month ?? 1) - 1, p.birthday_day ?? 1);
 		if (cand < ref) cand.setFullYear(cand.getFullYear() + 1);
 		return cand;
 	}
-	function daysUntil(b: Birthday): number {
-		const next = nextOccurrence(b);
-		return Math.round((next.getTime() - today.getTime()) / 86400000);
+	function daysUntil(p: { birthday_month: number | null; birthday_day: number | null }): number {
+		return Math.round((nextOccurrence(p).getTime() - today.getTime()) / 86400000);
 	}
-	function ageNext(b: Birthday): number | null {
-		if (!b.year) return null;
-		return nextOccurrence(b).getFullYear() - b.year;
+	function ageNext(p: Person): number | null {
+		if (!p.birthday_year) return null;
+		return nextOccurrence(p).getFullYear() - p.birthday_year;
 	}
 
 	const sortedByNext = $derived(
-		userData.birthdays
+		userData.people
+			.filter((p) => p.birthday_month !== null && p.birthday_day !== null)
 			.slice()
 			.sort((a, b) => nextOccurrence(a).getTime() - nextOccurrence(b).getTime())
 	);
 
-	function fmtMonthDay(b: Birthday) {
-		return `${MONTH_NAMES[b.month - 1]} ${b.day}`;
+	function fmtMonthDay(p: Person) {
+		return `${String(p.birthday_day).padStart(2, '0')}/${String(p.birthday_month).padStart(2, '0')}`;
 	}
 	function fmtCountdown(d: number) {
 		if (d === 0) return 'Today!';
@@ -91,33 +104,36 @@
 		return `in ${months} month${months === 1 ? '' : 's'}`;
 	}
 
-	async function createBirthday(ev: SubmitEvent) {
+	async function savePerson(ev: SubmitEvent) {
 		ev.preventDefault();
-		const name = newName.trim();
-		if (!name || !newDate) return;
-		const [yStr, mStr, dStr] = newDate.split('-');
-		const year = newYearKnown ? Number(yStr) : null;
-		const month = Number(mStr);
-		const day = Number(dStr);
+		const name = fName.trim();
+		if (!name || !fDate) return;
+		const [yStr, mStr, dStr] = fDate.split('-');
+		const birthday_year = fYearKnown ? Number(yStr) : null;
+		const birthday_month = Number(mStr);
+		const birthday_day = Number(dStr);
 		saving = true;
+		const payload = {
+			name,
+			notes: fNotes.trim() || null,
+			color: fColor,
+			birthday_month,
+			birthday_day,
+			birthday_year
+		};
 		try {
-			const res = await fetch('/calendar/birthdays/api', {
+			const res = await fetch('/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({
-					op: 'create',
-					name,
-					month,
-					day,
-					year,
-					notes: newNotes.trim() || null,
-					color: newColor
-				})
+				body: JSON.stringify(
+					editingId ? { op: 'update', id: editingId, ...payload } : { op: 'create', ...payload }
+				)
 			});
 			if (!res.ok) throw new Error();
-			const body = (await res.json()) as { birthday: Birthday };
-			userData.addBirthday(body.birthday);
-			showNew = false;
+			const body = (await res.json()) as { person: Person };
+			if (editingId) userData.updatePerson(editingId, body.person);
+			else userData.addPerson(body.person);
+			closeForm();
 			resetForm();
 		} catch {
 			// keep form open on failure
@@ -126,74 +142,76 @@
 		}
 	}
 
-	async function deleteBirthday(b: Birthday) {
-		if (!confirm(`Remove ${b.name}?`)) return;
-		const prev = b;
-		userData.removeBirthday(b.id);
+	async function deletePerson(p: Person) {
+		if (!confirm(`Remove ${p.name}?`)) return;
+		const prev = p;
+		userData.removePerson(p.id);
 		try {
-			const res = await fetch('/calendar/birthdays/api', {
+			const res = await fetch('/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ op: 'delete', id: b.id })
+				body: JSON.stringify({ op: 'delete', id: p.id })
 			});
 			if (!res.ok) throw new Error();
 		} catch {
-			userData.addBirthday(prev);
+			userData.addPerson(prev);
 		}
 	}
+	void MONTH_NAMES; // legacy, kept for future use
 </script>
 
 <header class="flex items-start justify-between gap-2">
 	<div class="space-y-1">
 		<h1 class="text-2xl font-semibold tracking-tight">Birthdays</h1>
 		<p class="text-sm text-muted-foreground">
-			Family + friends, sorted by who's up next.
+			People sorted by who's up next. Same records as the
+			<a class="underline" href="/people">People</a> directory.
 		</p>
 	</div>
-	<Button size="sm" onclick={() => (showNew ? (showNew = false) : openNew())}>
+	<Button size="sm" onclick={() => (showForm ? closeForm() : openNew())}>
 		<Plus class="size-4" />
-		<span>{showNew ? 'Close' : 'New'}</span>
+		<span>{showForm ? 'Close' : 'New'}</span>
 	</Button>
 </header>
 
-{#if showNew}
-	<form onsubmit={createBirthday} class="space-y-3 rounded-lg border bg-muted/20 p-4">
+{#if showForm}
+	<form onsubmit={savePerson} class="space-y-3 rounded-lg border bg-muted/20 p-4">
 		<div class="space-y-1.5">
-			<Label for="bd-name">Name</Label>
-			<Input id="bd-name" bind:value={newName} required autofocus />
+			<Label for="bd-name">{editingId ? 'Edit person' : 'Name'}</Label>
+			<Input id="bd-name" bind:value={fName} required autofocus />
 		</div>
 
 		<div class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
 			<div class="space-y-1.5">
 				<Label for="bd-date">Date</Label>
-				<Input id="bd-date" type="date" bind:value={newDate} required />
+				<Input id="bd-date" type="date" bind:value={fDate} required />
 			</div>
 			<label class="flex items-center gap-2 pb-2 text-sm">
-				<input type="checkbox" bind:checked={newYearKnown} class="size-4" />
+				<input type="checkbox" bind:checked={fYearKnown} class="size-4" />
 				<span>I know the year</span>
 			</label>
 		</div>
 
 		<div class="space-y-1.5">
 			<Label for="bd-notes">Notes <span class="text-muted-foreground">(optional)</span></Label>
-			<Textarea id="bd-notes" bind:value={newNotes} rows={2} />
+			<Textarea id="bd-notes" bind:value={fNotes} rows={2} />
 		</div>
 
 		<div class="space-y-1.5">
 			<Label class="text-xs">Color</Label>
-			<ColorPicker bind:value={newColor} label="Birthday color" />
+			<ColorPicker bind:value={fColor} label="Birthday color" />
 		</div>
 
 		<div class="flex justify-end gap-2">
-			<Button type="button" variant="ghost" size="sm" onclick={() => (showNew = false)}>Cancel</Button>
-			<Button type="submit" size="sm" disabled={saving || !newName.trim() || !newDate}>
-				{saving ? 'Saving…' : 'Add birthday'}
+			<Button type="button" variant="ghost" size="sm" onclick={closeForm}>Cancel</Button>
+			<Button type="submit" size="sm" disabled={saving || !fName.trim() || !fDate}>
+				{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add birthday'}
 			</Button>
 		</div>
 	</form>
 {/if}
 
-{#if userData.birthdays.length === 0}
+{#if sortedByNext.length === 0}
 	<div class="rounded-lg border border-dashed p-12 text-center">
 		<Cake class="mx-auto mb-3 size-10 text-muted-foreground/60" />
 		<p class="text-sm text-muted-foreground">
@@ -202,10 +220,10 @@
 	</div>
 {:else}
 	<ul class="divide-y divide-border rounded-lg border">
-		{#each sortedByNext as b (b.id)}
-			{@const hex = paletteHex(b.color) ?? '#CC79A7'}
-			{@const days = daysUntil(b)}
-			{@const age = ageNext(b)}
+		{#each sortedByNext as p (p.id)}
+			{@const hex = paletteHex(p.color) ?? '#CC79A7'}
+			{@const days = daysUntil(p)}
+			{@const age = ageNext(p)}
 			<li class="flex items-start gap-3 p-3">
 				<span
 					class="mt-1 grid size-7 shrink-0 place-items-center rounded-full text-base"
@@ -216,28 +234,41 @@
 				</span>
 				<div class="min-w-0 flex-1 space-y-0.5">
 					<div class="flex flex-wrap items-baseline gap-2">
-						<span class="text-sm font-semibold leading-snug">{b.name}</span>
-						<span class="text-xs text-muted-foreground tabular-nums">
-							{fmtMonthDay(b)}{#if b.year}<span class="opacity-60"> · {b.year}</span>{/if}
+						<span class="text-sm font-semibold leading-snug">{p.name}</span>
+						<span class="text-xs tabular-nums text-muted-foreground">
+							{fmtMonthDay(p)}{#if p.birthday_year}<span class="opacity-60"
+									> · {p.birthday_year}</span
+								>{/if}
 						</span>
 					</div>
-					<div class="text-xs text-muted-foreground tabular-nums">
+					<div class="text-xs tabular-nums text-muted-foreground">
 						{fmtCountdown(days)}{#if age !== null}<span> · turns {age}</span>{/if}
 					</div>
-					{#if b.notes}
-						<p class="pt-0.5 text-xs text-muted-foreground">{b.notes}</p>
+					{#if p.notes}
+						<p class="pt-0.5 text-xs text-muted-foreground">{p.notes}</p>
 					{/if}
 				</div>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} type="button" variant="ghost" size="icon-sm" aria-label="Birthday actions">
+							<Button
+								{...props}
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Birthday actions"
+							>
 								<MoreVertical class="size-4" />
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="w-44">
-						<DropdownMenu.Item variant="destructive" onclick={() => deleteBirthday(b)}>
+						<DropdownMenu.Item onclick={() => startEdit(p)}>
+							<Pencil class="size-4" />
+							<span>Edit</span>
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item variant="destructive" onclick={() => deletePerson(p)}>
 							<Trash2 class="size-4" />
 							<span>Delete</span>
 						</DropdownMenu.Item>

@@ -48,3 +48,22 @@ export function addDays(d: Date, days: number): Date {
 	out.setDate(out.getDate() + days);
 	return out;
 }
+
+/**
+ * `dd/mm/yyyy` from a Date or YYYY-MM-DD ISO string. Locale-independent —
+ * the app pins to AU-style dd/mm/yyyy regardless of the visitor's browser.
+ */
+export function fmtDate(d: Date | string): string {
+	const date = typeof d === 'string' ? dateFromIso(d) : d;
+	const dd = String(date.getDate()).padStart(2, '0');
+	const mm = String(date.getMonth() + 1).padStart(2, '0');
+	return `${dd}/${mm}/${date.getFullYear()}`;
+}
+
+/** Short `dd/mm` for compact contexts (e.g. weekday columns). */
+export function fmtDateShort(d: Date | string): string {
+	const date = typeof d === 'string' ? dateFromIso(d) : d;
+	const dd = String(date.getDate()).padStart(2, '0');
+	const mm = String(date.getMonth() + 1).padStart(2, '0');
+	return `${dd}/${mm}`;
+}

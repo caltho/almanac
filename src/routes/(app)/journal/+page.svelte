@@ -9,12 +9,10 @@
 	const defs = $derived(userData.defsFor('journal_entries'));
 
 	function fmt(date: string) {
-		return new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
-		});
+		const d = new Date(date + 'T00:00:00');
+		const dd = String(d.getDate()).padStart(2, '0');
+		const mm = String(d.getMonth() + 1).padStart(2, '0');
+		return `${dd}/${mm}/${d.getFullYear()}`;
 	}
 </script>
 

@@ -77,12 +77,16 @@
 		return map;
 	});
 
+	const peopleWithBirthday = $derived(
+		userData.people.filter((p) => p.birthday_month !== null && p.birthday_day !== null)
+	);
+
 	const birthdaysByMonthDay = $derived.by(() => {
-		const map = new Map<string, typeof userData.birthdays>();
-		for (const b of userData.birthdays) {
-			const key = `${String(b.month).padStart(2, '0')}-${String(b.day).padStart(2, '0')}`;
+		const map = new Map<string, typeof userData.people>();
+		for (const p of peopleWithBirthday) {
+			const key = `${String(p.birthday_month).padStart(2, '0')}-${String(p.birthday_day).padStart(2, '0')}`;
 			const list = map.get(key) ?? [];
-			list.push(b);
+			list.push(p);
 			map.set(key, list);
 		}
 		return map;
@@ -105,13 +109,19 @@
 
 	// Upcoming birthdays: next occurrence regardless of stored year. Capped at
 	// 5 so the side panel doesn't overflow the screen.
-	function nextOccurrence(b: { month: number; day: number }): Date {
-		const cand = new Date(today.getFullYear(), b.month - 1, b.day);
+	function nextOccurrence(p: {
+		birthday_month: number | null;
+		birthday_day: number | null;
+	}): Date {
+		const cand = new Date(today.getFullYear(), (p.birthday_month ?? 1) - 1, p.birthday_day ?? 1);
 		if (cand < today) cand.setFullYear(cand.getFullYear() + 1);
 		return cand;
 	}
-	function daysUntil(b: { month: number; day: number }): number {
-		return Math.round((nextOccurrence(b).getTime() - today.getTime()) / 86400000);
+	function daysUntil(p: {
+		birthday_month: number | null;
+		birthday_day: number | null;
+	}): number {
+		return Math.round((nextOccurrence(p).getTime() - today.getTime()) / 86400000);
 	}
 	function fmtCountdown(d: number) {
 		if (d === 0) return 'Today!';
@@ -123,7 +133,7 @@
 		return `in ${months} month${months === 1 ? '' : 's'}`;
 	}
 	const upcomingBirthdays = $derived(
-		userData.birthdays
+		peopleWithBirthday
 			.slice()
 			.sort((a, b) => nextOccurrence(a).getTime() - nextOccurrence(b).getTime())
 			.slice(0, 5)
@@ -139,11 +149,10 @@
 		});
 	}
 	function fmtSelectedHeader(d: Date) {
-		return d.toLocaleDateString(undefined, {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long'
-		});
+		const weekday = d.toLocaleDateString(undefined, { weekday: 'long' });
+		const dd = String(d.getDate()).padStart(2, '0');
+		const mm = String(d.getMonth() + 1).padStart(2, '0');
+		return `${weekday} · ${dd}/${mm}/${d.getFullYear()}`;
 	}
 	function ageOn(year: number, _onDate: Date): number {
 		return _onDate.getFullYear() - year;
@@ -288,9 +297,9 @@
 							></span>
 							<div class="min-w-0 flex-1">
 								<div class="text-sm font-medium leading-snug">
-									🎂 {b.name}{#if b.year}
+									🎂 {b.name}{#if b.birthday_year}
 										<span class="text-xs text-muted-foreground tabular-nums">
-											· turns {ageOn(b.year, selectedDate)}
+											· turns {ageOn(b.birthday_year, selectedDate)}
 										</span>
 									{/if}
 								</div>

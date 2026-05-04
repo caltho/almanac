@@ -28,11 +28,11 @@
 	const isToday = $derived(selectedIso === todayIso);
 	const selectedLabel = $derived.by(() => {
 		const [y, m, d] = selectedIso.split('-').map(Number);
-		return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long'
-		});
+		const dt = new Date(y, m - 1, d);
+		const weekday = dt.toLocaleDateString(undefined, { weekday: 'long' });
+		const dd = String(dt.getDate()).padStart(2, '0');
+		const mm = String(dt.getMonth() + 1).padStart(2, '0');
+		return `${weekday} ${dd}/${mm}/${dt.getFullYear()}`;
 	});
 
 	let busy = $state<Record<string, boolean>>({});

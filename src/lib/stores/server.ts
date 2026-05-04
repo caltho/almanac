@@ -60,7 +60,7 @@ export async function loadHotData(
 		{ data: checklistItems },
 		{ data: quickNotes },
 		{ data: events },
-		{ data: birthdays }
+		{ data: people }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -176,10 +176,11 @@ export async function loadHotData(
 			.gte('start_at', isoDaysAgo(30))
 			.order('start_at', { ascending: true }),
 		supabase
-			.from('birthdays')
-			.select('id, owner_id, name, month, day, year, notes, color, updated_at')
-			.order('month', { ascending: true })
-			.order('day', { ascending: true })
+			.from('people')
+			.select(
+				'id, owner_id, name, email, phone, notes, color, avatar_url, birthday_month, birthday_day, birthday_year, updated_at'
+			)
+			.order('name', { ascending: true })
 	]);
 
 	return {
@@ -205,7 +206,7 @@ export async function loadHotData(
 		checklistItems: checklistItems ?? [],
 		quickNotes: quickNotes ?? [],
 		events: events ?? [],
-		birthdays: birthdays ?? [],
+		people: people ?? [],
 		hydratedAt: Date.now()
 	};
 }

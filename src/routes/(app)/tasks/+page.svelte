@@ -45,7 +45,9 @@
 		if (diff === -1) return 'Yesterday';
 		if (diff < 0) return `${-diff}d overdue`;
 		if (diff < 7) return `in ${diff}d`;
-		return date.toLocaleDateString();
+		const dd = String(date.getDate()).padStart(2, '0');
+		const mm = String(date.getMonth() + 1).padStart(2, '0');
+		return `${dd}/${mm}/${date.getFullYear()}`;
 	}
 
 	async function toggleDone(task: Task) {

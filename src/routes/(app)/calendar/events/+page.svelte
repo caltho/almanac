@@ -90,12 +90,9 @@
 
 	function fmtWhen(e: CalendarEvent) {
 		const d = new Date(e.start_at);
-		const dateStr = d.toLocaleDateString(undefined, {
-			weekday: 'short',
-			day: 'numeric',
-			month: 'short',
-			year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric'
-		});
+		const dd = String(d.getDate()).padStart(2, '0');
+		const mm = String(d.getMonth() + 1).padStart(2, '0');
+		const dateStr = `${dd}/${mm}/${d.getFullYear()}`;
 		if (e.all_day) return `${dateStr} · All day`;
 		const timeStr = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 		return `${dateStr} · ${timeStr}`;

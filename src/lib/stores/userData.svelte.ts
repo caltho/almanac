@@ -168,9 +168,20 @@ export type CalendarEvent = Pick<
 	| 'updated_at'
 >;
 
-export type Birthday = Pick<
-	T['birthdays']['Row'],
-	'id' | 'owner_id' | 'name' | 'month' | 'day' | 'year' | 'notes' | 'color' | 'updated_at'
+export type Person = Pick<
+	T['people']['Row'],
+	| 'id'
+	| 'owner_id'
+	| 'name'
+	| 'email'
+	| 'phone'
+	| 'notes'
+	| 'color'
+	| 'avatar_url'
+	| 'birthday_month'
+	| 'birthday_day'
+	| 'birthday_year'
+	| 'updated_at'
 >;
 
 export type Activity = Pick<
@@ -203,7 +214,7 @@ export type HotData = {
 	checklistItems: ChecklistItem[];
 	quickNotes: QuickNote[];
 	events: CalendarEvent[];
-	birthdays: Birthday[];
+	people: Person[];
 	hydratedAt: number;
 };
 
@@ -230,7 +241,7 @@ export class UserData {
 	checklistItems = $state<ChecklistItem[]>([]);
 	quickNotes = $state<QuickNote[]>([]);
 	events = $state<CalendarEvent[]>([]);
-	birthdays = $state<Birthday[]>([]);
+	people = $state<Person[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -256,7 +267,7 @@ export class UserData {
 		this.checklistItems = seed.checklistItems;
 		this.quickNotes = seed.quickNotes;
 		this.events = seed.events;
-		this.birthdays = seed.birthdays;
+		this.people = seed.people;
 		this.hydratedAt = seed.hydratedAt;
 	}
 
@@ -271,15 +282,15 @@ export class UserData {
 	removeEvent(id: string) {
 		this.events = this.events.filter((e) => e.id !== id);
 	}
-	addBirthday(b: Birthday) {
-		this.birthdays = [...this.birthdays, b];
+	addPerson(p: Person) {
+		this.people = [...this.people, p];
 	}
-	updateBirthday(id: string, patch: Partial<Birthday>) {
-		const i = this.birthdays.findIndex((b) => b.id === id);
-		if (i >= 0) this.birthdays[i] = { ...this.birthdays[i], ...patch };
+	updatePerson(id: string, patch: Partial<Person>) {
+		const i = this.people.findIndex((p) => p.id === id);
+		if (i >= 0) this.people[i] = { ...this.people[i], ...patch };
 	}
-	removeBirthday(id: string) {
-		this.birthdays = this.birthdays.filter((b) => b.id !== id);
+	removePerson(id: string) {
+		this.people = this.people.filter((p) => p.id !== id);
 	}
 
 	// --- Quick notes ---------------------------------------------------------
