@@ -13,6 +13,8 @@
 	import { paletteHex, type PaletteToken } from '$lib/palette';
 	import { localIso } from '$lib/dates';
 	import { useUserData, type CalendarEvent } from '$lib/stores/userData.svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	const userData = useUserData();
 
@@ -47,11 +49,26 @@
 		personQuery = '';
 	}
 
-	function openNew() {
+	function openNew(prefilledDate?: string) {
 		resetForm();
+		if (prefilledDate) newDate = prefilledDate;
 		editingId = null;
 		showNew = true;
 	}
+
+	// Honour ?new=1&date=YYYY-MM-DD when the user lands here from the
+	// calendar's "New event" button on a selected day. Strip the params
+	// after consuming so the form doesn't re-open on history-back.
+	$effect(() => {
+		const params = page.url.searchParams;
+		if (params.get('new') !== '1') return;
+		const date = params.get('date') ?? undefined;
+		openNew(date);
+		const clean = new URL(page.url);
+		clean.searchParams.delete('new');
+		clean.searchParams.delete('date');
+		void goto(clean.pathname + (clean.search || ''), { replaceState: true, noScroll: true });
+	});
 
 	function startEdit(e: CalendarEvent) {
 		const start = new Date(e.start_at);

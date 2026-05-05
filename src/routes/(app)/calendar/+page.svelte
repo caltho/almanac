@@ -171,7 +171,7 @@
 	</div>
 	<div class="flex items-center gap-2">
 		<Button variant="outline" size="sm" onclick={goToToday}>Today</Button>
-		<Button size="sm" href="/calendar/events">New event</Button>
+		<Button size="sm" href={`/calendar/events?new=1&date=${selectedIso}`}>New event</Button>
 	</div>
 </header>
 

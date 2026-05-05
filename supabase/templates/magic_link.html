@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="color-scheme" content="light dark" />
+		<meta name="supported-color-schemes" content="light dark" />
+		<title>Almanac · sign in</title>
+		<style>
+			/* Email clients ignore most CSS; everything below is a polite
+				 suggestion for the ones that don't. Inline styles do the
+				 actual heavy lifting. */
+			@media (prefers-color-scheme: dark) {
+				.bg { background: #0a0a0b !important; }
+				.card { background: #18181b !important; border-color: #27272a !important; }
+				.fg { color: #fafafa !important; }
+				.muted { color: #a1a1aa !important; }
+				.faint { color: #71717a !important; }
+				.btn { background: #fafafa !important; color: #18181b !important; }
+				.divider { border-color: #27272a !important; }
+				.chip { background: #27272a !important; color: #d4d4d8 !important; }
+			}
+		</style>
+	</head>
+	<body
+		class="bg"
+		style="margin:0;padding:0;background:#f5f4ee;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#18181b;-webkit-font-smoothing:antialiased;"
+	>
+		<table
+			role="presentation"
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			border="0"
+			class="bg"
+			style="background:#f5f4ee;"
+		>
+			<tr>
+				<td align="center" style="padding:48px 16px;">
+					<!-- Wordmark -->
+					<p
+						class="faint"
+						style="margin:0 0 24px;font-size:10px;letter-spacing:0.35em;text-transform:uppercase;color:#71717a;"
+					>
+						✦&nbsp;&nbsp;A L M A N A C&nbsp;&nbsp;✦
+					</p>
+
+					<!-- Card -->
+					<table
+						role="presentation"
+						width="100%"
+						cellpadding="0"
+						cellspacing="0"
+						border="0"
+						class="card"
+						style="max-width:460px;background:#ffffff;border:1px solid #e5e5e0;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04);"
+					>
+						<tr>
+							<td style="padding:40px 32px 32px;">
+								<h1
+									class="fg"
+									style="margin:0 0 6px;font-size:26px;font-weight:600;line-height:1.15;letter-spacing:-0.015em;color:#18181b;"
+								>
+									Welcome back.
+								</h1>
+								<p
+									class="muted"
+									style="margin:0 0 28px;font-size:15px;line-height:1.55;color:#52525b;"
+								>
+									Tap once and you're in. The link is good for an hour, and only on
+									this browser.
+								</p>
+
+								<!-- CTA -->
+								<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+									<tr>
+										<td
+											class="btn"
+											style="border-radius:10px;background:#18181b;"
+										>
+											<a
+												href="{{ .ConfirmationURL }}"
+												class="btn"
+												style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.01em;border-radius:10px;background:#18181b;"
+												>Open Almanac&nbsp;→</a
+											>
+										</td>
+									</tr>
+								</table>
+
+								<!-- Divider -->
+								<hr
+									class="divider"
+									style="margin:32px 0 20px;border:none;border-top:1px solid #e5e5e0;"
+								/>
+
+								<!-- Fallback URL -->
+								<p
+									class="faint"
+									style="margin:0 0 6px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#a1a1aa;"
+								>
+									Or paste this in your browser
+								</p>
+								<p
+									class="muted"
+									style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;color:#52525b;word-break:break-all;"
+								>
+									{{ .ConfirmationURL }}
+								</p>
+							</td>
+						</tr>
+					</table>
+
+					<!-- Footer -->
+					<p
+						class="faint"
+						style="margin:24px 0 0;font-size:11px;line-height:1.6;color:#a1a1aa;"
+					>
+						Didn't ask for this? Ignore the email — nothing changes until you click.<br />
+						Sent to <span class="muted" style="color:#52525b;">{{ .Email }}</span>
+					</p>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
