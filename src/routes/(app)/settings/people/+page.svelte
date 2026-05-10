@@ -112,7 +112,7 @@
 		};
 
 		try {
-			const res = await fetch('/people/api', {
+			const res = await fetch('/settings/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify(
@@ -136,7 +136,7 @@
 		const at = new Date().toISOString();
 		userData.updatePerson(p.id, { last_contacted_at: at });
 		try {
-			const res = await fetch('/people/api', {
+			const res = await fetch('/settings/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'markContacted', id: p.id })
@@ -154,7 +154,7 @@
 		const prev = p;
 		userData.removePerson(p.id);
 		try {
-			const res = await fetch('/people/api', {
+			const res = await fetch('/settings/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'delete', id: p.id })

@@ -11,7 +11,6 @@ import BookOpen from '@lucide/svelte/icons/book-open';
 import CalendarDays from '@lucide/svelte/icons/calendar-days';
 import Moon from '@lucide/svelte/icons/moon';
 import Zap from '@lucide/svelte/icons/zap';
-import Users from '@lucide/svelte/icons/users';
 import Wallet from '@lucide/svelte/icons/wallet';
 import FolderKanban from '@lucide/svelte/icons/folder-kanban';
 import UtensilsCrossed from '@lucide/svelte/icons/utensils-crossed';
@@ -28,7 +27,6 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
 	{ href: '/journal', label: 'Journal', icon: BookOpen, milestone: 2 },
 	{ href: '/calendar', label: 'Calendar', icon: CalendarDays, milestone: 3 },
-	{ href: '/people', label: 'People', icon: Users, milestone: 3 },
 	{ href: '/sleep', label: 'Sleep', icon: Moon, milestone: 3 },
 	{ href: '/tasks', label: 'Doing', icon: Zap, milestone: 3 },
 	{ href: '/food', label: 'Food', icon: UtensilsCrossed, milestone: 3 },

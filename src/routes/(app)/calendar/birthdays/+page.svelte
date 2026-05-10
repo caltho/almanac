@@ -122,7 +122,7 @@
 			birthday_year
 		};
 		try {
-			const res = await fetch('/people/api', {
+			const res = await fetch('/settings/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify(
@@ -147,7 +147,7 @@
 		const prev = p;
 		userData.removePerson(p.id);
 		try {
-			const res = await fetch('/people/api', {
+			const res = await fetch('/settings/people/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'delete', id: p.id })
@@ -165,7 +165,7 @@
 		<h1 class="text-2xl font-semibold tracking-tight">Birthdays</h1>
 		<p class="text-sm text-muted-foreground">
 			People sorted by who's up next. Same records as the
-			<a class="underline" href="/people">People</a> directory.
+			<a class="underline" href="/settings/people">People</a> directory.
 		</p>
 	</div>
 	<Button size="sm" onclick={() => (showForm ? closeForm() : openNew())}>

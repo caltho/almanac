@@ -285,7 +285,7 @@
 				id="ev-people"
 				bind:value={personQuery}
 				placeholder={userData.people.length === 0
-					? 'Add people first in /people'
+					? 'Add people first in Settings → People'
 					: 'Search to add…'}
 				disabled={userData.people.length === 0}
 				class="h-8"
