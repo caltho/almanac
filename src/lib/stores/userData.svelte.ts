@@ -148,6 +148,16 @@ export type ChecklistItem = Pick<
 	'id' | 'checklist_id' | 'title' | 'checked' | 'order_index'
 >;
 
+export type TaskList = Pick<
+	T['task_lists']['Row'],
+	'id' | 'owner_id' | 'name' | 'color' | 'created_at' | 'updated_at'
+>;
+
+export type TaskListItem = Pick<
+	T['task_list_items']['Row'],
+	'id' | 'list_id' | 'title' | 'checked' | 'order_index'
+>;
+
 export type QuickNote = Pick<
 	T['quick_notes']['Row'],
 	'id' | 'owner_id' | 'title' | 'body' | 'color' | 'internalised' | 'created_at' | 'updated_at'
@@ -220,6 +230,8 @@ export type HotData = {
 	events: CalendarEvent[];
 	people: Person[];
 	eventPeople: EventPerson[];
+	taskLists: TaskList[];
+	taskListItems: TaskListItem[];
 	hydratedAt: number;
 };
 
@@ -248,6 +260,8 @@ export class UserData {
 	events = $state<CalendarEvent[]>([]);
 	people = $state<Person[]>([]);
 	eventPeople = $state<EventPerson[]>([]);
+	taskLists = $state<TaskList[]>([]);
+	taskListItems = $state<TaskListItem[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -275,7 +289,32 @@ export class UserData {
 		this.events = seed.events;
 		this.people = seed.people;
 		this.eventPeople = seed.eventPeople;
+		this.taskLists = seed.taskLists;
+		this.taskListItems = seed.taskListItems;
 		this.hydratedAt = seed.hydratedAt;
+	}
+
+	// --- Task lists ----------------------------------------------------------
+	addTaskList(l: TaskList) {
+		this.taskLists = [l, ...this.taskLists];
+	}
+	updateTaskList(id: string, patch: Partial<TaskList>) {
+		const i = this.taskLists.findIndex((l) => l.id === id);
+		if (i >= 0) this.taskLists[i] = { ...this.taskLists[i], ...patch };
+	}
+	removeTaskList(id: string) {
+		this.taskLists = this.taskLists.filter((l) => l.id !== id);
+		this.taskListItems = this.taskListItems.filter((i) => i.list_id !== id);
+	}
+	addTaskListItem(item: TaskListItem) {
+		this.taskListItems = [...this.taskListItems, item];
+	}
+	updateTaskListItem(id: string, patch: Partial<TaskListItem>) {
+		const i = this.taskListItems.findIndex((x) => x.id === id);
+		if (i >= 0) this.taskListItems[i] = { ...this.taskListItems[i], ...patch };
+	}
+	removeTaskListItem(id: string) {
+		this.taskListItems = this.taskListItems.filter((x) => x.id !== id);
 	}
 
 	// --- Event ↔ people junction ---------------------------------------------

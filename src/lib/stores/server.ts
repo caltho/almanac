@@ -61,7 +61,9 @@ export async function loadHotData(
 		{ data: quickNotes },
 		{ data: events },
 		{ data: people },
-		{ data: eventPeople }
+		{ data: eventPeople },
+		{ data: taskLists },
+		{ data: taskListItems }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -182,7 +184,15 @@ export async function loadHotData(
 				'id, owner_id, name, email, phone, notes, color, avatar_url, birthday_month, birthday_day, birthday_year, tags, last_contacted_at, updated_at'
 			)
 			.order('name', { ascending: true }),
-		supabase.from('event_people').select('event_id, person_id')
+		supabase.from('event_people').select('event_id, person_id'),
+		supabase
+			.from('task_lists')
+			.select('id, owner_id, name, color, created_at, updated_at')
+			.order('created_at', { ascending: false }),
+		supabase
+			.from('task_list_items')
+			.select('id, list_id, title, checked, order_index')
+			.order('order_index', { ascending: true })
 	]);
 
 	return {
@@ -210,6 +220,8 @@ export async function loadHotData(
 		events: events ?? [],
 		people: people ?? [],
 		eventPeople: eventPeople ?? [],
+		taskLists: taskLists ?? [],
+		taskListItems: taskListItems ?? [],
 		hydratedAt: Date.now()
 	};
 }
