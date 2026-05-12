@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import type { Database } from '$lib/db/types';
 import { isPaletteToken } from '$lib/palette';
 
-type PersonUpdate = Database['public']['Tables']['people']['Update'];
+type PersonUpdate = Database['almanac']['Tables']['people']['Update'];
 
 const SELECT =
 	'id, owner_id, name, email, phone, notes, color, avatar_url, birthday_month, birthday_day, birthday_year, tags, last_contacted_at, updated_at';

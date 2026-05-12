@@ -12,7 +12,7 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  public: {
+  almanac: {
     Tables: {
       activities: {
         Row: {
@@ -90,7 +90,7 @@ export type Database = {
           currency: string
           custom: Json
           id: string
-          kind: Database["public"]["Enums"]["asset_kind"]
+          kind: Database["almanac"]["Enums"]["asset_kind"]
           location: string | null
           name: string
           notes: string | null
@@ -107,7 +107,7 @@ export type Database = {
           currency?: string
           custom?: Json
           id?: string
-          kind?: Database["public"]["Enums"]["asset_kind"]
+          kind?: Database["almanac"]["Enums"]["asset_kind"]
           location?: string | null
           name: string
           notes?: string | null
@@ -124,7 +124,7 @@ export type Database = {
           currency?: string
           custom?: Json
           id?: string
-          kind?: Database["public"]["Enums"]["asset_kind"]
+          kind?: Database["almanac"]["Enums"]["asset_kind"]
           location?: string | null
           name?: string
           notes?: string | null
@@ -144,7 +144,7 @@ export type Database = {
           currency: string
           id: string
           owner_id: string
-          period: Database["public"]["Enums"]["budget_period"]
+          period: Database["almanac"]["Enums"]["budget_period"]
           updated_at: string
         }
         Insert: {
@@ -154,7 +154,7 @@ export type Database = {
           currency?: string
           id?: string
           owner_id: string
-          period?: Database["public"]["Enums"]["budget_period"]
+          period?: Database["almanac"]["Enums"]["budget_period"]
           updated_at?: string
         }
         Update: {
@@ -164,7 +164,7 @@ export type Database = {
           currency?: string
           id?: string
           owner_id?: string
-          period?: Database["public"]["Enums"]["budget_period"]
+          period?: Database["almanac"]["Enums"]["budget_period"]
           updated_at?: string
         }
         Relationships: [
@@ -293,7 +293,7 @@ export type Database = {
           owner_id: string
           required: boolean
           table_name: string
-          type: Database["public"]["Enums"]["custom_attr_type"]
+          type: Database["almanac"]["Enums"]["custom_attr_type"]
           ui_hints: Json
           updated_at: string
         }
@@ -306,7 +306,7 @@ export type Database = {
           owner_id: string
           required?: boolean
           table_name: string
-          type: Database["public"]["Enums"]["custom_attr_type"]
+          type: Database["almanac"]["Enums"]["custom_attr_type"]
           ui_hints?: Json
           updated_at?: string
         }
@@ -319,7 +319,7 @@ export type Database = {
           owner_id?: string
           required?: boolean
           table_name?: string
-          type?: Database["public"]["Enums"]["custom_attr_type"]
+          type?: Database["almanac"]["Enums"]["custom_attr_type"]
           ui_hints?: Json
           updated_at?: string
         }
@@ -552,7 +552,7 @@ export type Database = {
           id: string
           owner_id: string
           source: string | null
-          status: Database["public"]["Enums"]["import_batch_status"]
+          status: Database["almanac"]["Enums"]["import_batch_status"]
           total_rows: number
         }
         Insert: {
@@ -564,7 +564,7 @@ export type Database = {
           id?: string
           owner_id: string
           source?: string | null
-          status?: Database["public"]["Enums"]["import_batch_status"]
+          status?: Database["almanac"]["Enums"]["import_batch_status"]
           total_rows?: number
         }
         Update: {
@@ -576,7 +576,7 @@ export type Database = {
           id?: string
           owner_id?: string
           source?: string | null
-          status?: Database["public"]["Enums"]["import_batch_status"]
+          status?: Database["almanac"]["Enums"]["import_batch_status"]
           total_rows?: number
         }
         Relationships: []
@@ -979,7 +979,7 @@ export type Database = {
           grantee_id: string
           id: string
           owner_id: string
-          perms: Database["public"]["Enums"]["share_perm"][]
+          perms: Database["almanac"]["Enums"]["share_perm"][]
           resource_id: string | null
           resource_type: string
           scope: Json
@@ -990,7 +990,7 @@ export type Database = {
           grantee_id: string
           id?: string
           owner_id: string
-          perms?: Database["public"]["Enums"]["share_perm"][]
+          perms?: Database["almanac"]["Enums"]["share_perm"][]
           resource_id?: string | null
           resource_type: string
           scope?: Json
@@ -1001,7 +1001,7 @@ export type Database = {
           grantee_id?: string
           id?: string
           owner_id?: string
-          perms?: Database["public"]["Enums"]["share_perm"][]
+          perms?: Database["almanac"]["Enums"]["share_perm"][]
           resource_id?: string | null
           resource_type?: string
           scope?: Json
@@ -1020,8 +1020,8 @@ export type Database = {
           name: string
           notes: string | null
           owner_id: string
-          restock_period: Database["public"]["Enums"]["shopping_period"]
-          status: Database["public"]["Enums"]["shopping_status"]
+          restock_period: Database["almanac"]["Enums"]["shopping_period"]
+          status: Database["almanac"]["Enums"]["shopping_status"]
           updated_at: string
         }
         Insert: {
@@ -1034,8 +1034,8 @@ export type Database = {
           name: string
           notes?: string | null
           owner_id: string
-          restock_period?: Database["public"]["Enums"]["shopping_period"]
-          status?: Database["public"]["Enums"]["shopping_status"]
+          restock_period?: Database["almanac"]["Enums"]["shopping_period"]
+          status?: Database["almanac"]["Enums"]["shopping_status"]
           updated_at?: string
         }
         Update: {
@@ -1048,8 +1048,8 @@ export type Database = {
           name?: string
           notes?: string | null
           owner_id?: string
-          restock_period?: Database["public"]["Enums"]["shopping_period"]
-          status?: Database["public"]["Enums"]["shopping_status"]
+          restock_period?: Database["almanac"]["Enums"]["shopping_period"]
+          status?: Database["almanac"]["Enums"]["shopping_status"]
           updated_at?: string
         }
         Relationships: []
@@ -1179,7 +1179,7 @@ export type Database = {
           owner_id: string
           priority: number | null
           project_id: string | null
-          status: Database["public"]["Enums"]["task_status"]
+          status: Database["almanac"]["Enums"]["task_status"]
           title: string
           updated_at: string
         }
@@ -1194,7 +1194,7 @@ export type Database = {
           owner_id: string
           priority?: number | null
           project_id?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database["almanac"]["Enums"]["task_status"]
           title: string
           updated_at?: string
         }
@@ -1209,7 +1209,7 @@ export type Database = {
           owner_id?: string
           priority?: number | null
           project_id?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database["almanac"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
         }
@@ -1290,15 +1290,13 @@ export type Database = {
       can_access: {
         Args: {
           p_extra?: Json
-          p_perm?: Database["public"]["Enums"]["share_perm"]
+          p_perm?: Database["almanac"]["Enums"]["share_perm"]
           p_resource_id: string
           p_resource_type: string
         }
         Returns: boolean
       }
       find_user_by_email: { Args: { p_email: string }; Returns: string }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       suggest_category_by_similarity: {
         Args: { p_description: string; p_min?: number }
         Returns: string
@@ -1454,7 +1452,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  almanac: {
     Enums: {
       asset_kind: [
         "cash",

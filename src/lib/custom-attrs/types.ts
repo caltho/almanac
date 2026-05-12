@@ -1,9 +1,9 @@
 import type { Database } from '$lib/db/types';
 
-export type CustomAttrType = Database['public']['Enums']['custom_attr_type'];
+export type CustomAttrType = Database['almanac']['Enums']['custom_attr_type'];
 
-export type CustomAttrDef = Database['public']['Tables']['custom_attribute_defs']['Row'];
-export type CustomAttrDefInsert = Database['public']['Tables']['custom_attribute_defs']['Insert'];
+export type CustomAttrDef = Database['almanac']['Tables']['custom_attribute_defs']['Row'];
+export type CustomAttrDefInsert = Database['almanac']['Tables']['custom_attribute_defs']['Insert'];
 
 // Runtime-safe shape for ui_hints across types.
 export type UiHints = {

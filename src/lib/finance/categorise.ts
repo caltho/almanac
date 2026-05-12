@@ -10,7 +10,7 @@ export type CategoriseHit = {
 // Only the fields we actually need — lets callers pass partial selects.
 export type CategoryWithRules = {
 	id: string;
-	rules: Database['public']['Tables']['categories']['Row']['rules'];
+	rules: Database['almanac']['Tables']['categories']['Row']['rules'];
 };
 
 /**

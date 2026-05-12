@@ -1,7 +1,7 @@
 import type { Database } from '$lib/db/types';
 
-export type ShoppingStatus = Database['public']['Enums']['shopping_status'];
-export type ShoppingPeriod = Database['public']['Enums']['shopping_period'];
+export type ShoppingStatus = Database['almanac']['Enums']['shopping_status'];
+export type ShoppingPeriod = Database['almanac']['Enums']['shopping_period'];
 
 export const SHOPPING_PERIODS: ShoppingPeriod[] = [
 	'none',

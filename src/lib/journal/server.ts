@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/db/types';
 
-export type JournalEntry = Database['public']['Tables']['journal_entries']['Row'];
+export type JournalEntry = Database['almanac']['Tables']['journal_entries']['Row'];
 
 export async function listJournal(
 	supabase: SupabaseClient<Database>,

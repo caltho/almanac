@@ -4,7 +4,7 @@ import type { Database } from '$lib/db/types';
 import type { SupabaseServerClient } from '$lib/db/server';
 import { isPaletteToken } from '$lib/palette';
 
-type EventUpdate = Database['public']['Tables']['events']['Update'];
+type EventUpdate = Database['almanac']['Tables']['events']['Update'];
 
 const SELECT =
 	'id, owner_id, title, description, start_at, end_at, all_day, location, color, custom, updated_at';

@@ -1,7 +1,7 @@
 import type { Database } from '$lib/db/types';
 
-export type DatasetRow = Database['public']['Tables']['datasets']['Row'];
-export type DatasetRowRow = Database['public']['Tables']['dataset_rows']['Row'];
+export type DatasetRow = Database['almanac']['Tables']['datasets']['Row'];
+export type DatasetRowRow = Database['almanac']['Tables']['dataset_rows']['Row'];
 
 export const DATASET_COLUMN_TYPES = ['text', 'number', 'date'] as const;
 export type DatasetColumnType = (typeof DATASET_COLUMN_TYPES)[number];

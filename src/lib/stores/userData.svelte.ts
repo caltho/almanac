@@ -18,7 +18,7 @@
 import { getContext, setContext } from 'svelte';
 import type { Database } from '$lib/db/types';
 
-type T = Database['public']['Tables'];
+type T = Database['almanac']['Tables'];
 
 export type Profile = Pick<T['profiles']['Row'], 'id' | 'display_name' | 'avatar_url'>;
 export type Share = T['shares']['Row'];
