@@ -594,7 +594,7 @@
 								{item.title}
 							</span>
 						</button>
-						{#if !faded}
+						{#if !faded && showAddItem[l.id]}
 							<Button
 								type="button"
 								variant="ghost"

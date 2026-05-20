@@ -26,9 +26,9 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
 	{ href: '/journal', label: 'Journal', icon: BookOpen, milestone: 2 },
-	{ href: '/calendar', label: 'Calendar', icon: CalendarDays, milestone: 3 },
 	{ href: '/sleep', label: 'Sleep', icon: Moon, milestone: 3 },
 	{ href: '/tasks', label: 'Doing', icon: Zap, milestone: 3 },
+	{ href: '/calendar', label: 'Calendar', icon: CalendarDays, milestone: 3 },
 	{ href: '/food', label: 'Food', icon: UtensilsCrossed, milestone: 3 },
 	{ href: '/finance', label: 'Finance', icon: Wallet, milestone: 4 },
 	{ href: '/projects', label: 'Projects', icon: FolderKanban, milestone: 5 }
