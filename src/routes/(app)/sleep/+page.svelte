@@ -8,18 +8,73 @@
 	import * as Card from '$lib/components/ui/card';
 	import { AttrsEditor, AttrsRenderer } from '$lib/custom-attrs';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import { useUserData } from '$lib/stores/userData.svelte';
 
 	let { form } = $props();
 
-	import { localIso } from '$lib/dates';
+	import { localIso, localMidnight, dateFromIso } from '$lib/dates';
 
 	const userData = useUserData();
 	const defs = $derived(userData.defsFor('sleep_logs'));
 
 	let values = $state<Record<string, unknown>>({});
 	let submitting = $state(false);
+
+	// Sleep is always logged AFTER the night happens — there's nothing to
+	// record for the night that hasn't started yet. Default to yesterday
+	// (or whichever recent past day still has no entry), and never let the
+	// picker land on today or the future. The user can step back further
+	// with the arrows for back-fills.
 	const today = localIso();
+
+	const loggedDates = $derived(new Set(userData.sleepLogs.map((l) => l.log_date)));
+
+	function mostRecentUnloggedPast(): string {
+		const cursor = localMidnight();
+		// Walk back from yesterday looking for the first day without a log.
+		// Cap the walk at ~365 days so a brand-new user lands on yesterday
+		// without spinning forever.
+		cursor.setDate(cursor.getDate() - 1);
+		for (let i = 0; i < 365; i++) {
+			const iso = localIso(cursor);
+			if (!loggedDates.has(iso)) return iso;
+			cursor.setDate(cursor.getDate() - 1);
+		}
+		// Pathological fallback — return yesterday.
+		const y = localMidnight();
+		y.setDate(y.getDate() - 1);
+		return localIso(y);
+	}
+
+	let logDate = $state(mostRecentUnloggedPast());
+
+	// If the user logs a date and the store updates, advance the picker to
+	// the next unlogged past day automatically — no fiddling required to
+	// log the night before that one.
+	$effect(() => {
+		if (loggedDates.has(logDate)) {
+			logDate = mostRecentUnloggedPast();
+		}
+	});
+
+	function shiftDay(delta: number) {
+		const d = dateFromIso(logDate);
+		d.setDate(d.getDate() + delta);
+		const iso = localIso(d);
+		// Never advance past yesterday — sleep for tonight hasn't happened.
+		if (iso >= today) return;
+		logDate = iso;
+	}
+
+	const atYesterday = $derived(() => {
+		const y = localMidnight();
+		y.setDate(y.getDate() - 1);
+		return logDate === localIso(y);
+	});
+
+	const alreadyLogged = $derived(loggedDates.has(logDate));
 
 	let wentToBed = $state('');
 	let wokeUp = $state('');
@@ -35,6 +90,16 @@
 		const dd = String(dt.getDate()).padStart(2, '0');
 		const mm = String(dt.getMonth() + 1).padStart(2, '0');
 		return `${dd}/${mm}/${dt.getFullYear()}`;
+	}
+
+	function fmtPicker(iso: string): string {
+		const dt = dateFromIso(iso);
+		const ms = dateFromIso(today).getTime() - dt.getTime();
+		const days = Math.round(ms / 86400000);
+		const weekday = dt.toLocaleDateString(undefined, { weekday: 'long' });
+		if (days === 1) return `Last night · ${weekday} ${fmt(iso)}`;
+		if (days === 2) return `2 nights ago · ${weekday} ${fmt(iso)}`;
+		return `${days} nights ago · ${weekday} ${fmt(iso)}`;
 	}
 
 	/** Auto-compute hours between two HH:MM strings, assuming bed→wake crosses
@@ -77,7 +142,7 @@
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title class="text-base">Log last night</Card.Title>
+			<Card.Title class="text-base">Log a night</Card.Title>
 		</Card.Header>
 		<form
 			method="POST"
@@ -92,9 +157,51 @@
 			}}
 		>
 			<Card.Content class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				<div class="space-y-2">
-					<Label for="log_date">Date</Label>
-					<Input id="log_date" name="log_date" type="date" value={today} required />
+				<div class="space-y-2 sm:col-span-2 lg:col-span-3">
+					<Label for="log_date">Night of</Label>
+					<div class="flex items-center gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="icon-sm"
+							onclick={() => shiftDay(-1)}
+							aria-label="Earlier night"
+						>
+							<ChevronLeft class="size-4" />
+						</Button>
+						<Input
+							id="log_date"
+							name="log_date"
+							type="date"
+							bind:value={logDate}
+							max={(() => {
+								// Max = yesterday. Can't log tonight; we don't know yet.
+								const y = localMidnight();
+								y.setDate(y.getDate() - 1);
+								return localIso(y);
+							})()}
+							required
+							class="flex-1"
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							size="icon-sm"
+							onclick={() => shiftDay(1)}
+							disabled={atYesterday()}
+							aria-label="Later night"
+						>
+							<ChevronRight class="size-4" />
+						</Button>
+					</div>
+					<p
+						class={`text-xs tabular-nums ${
+							alreadyLogged ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
+						}`}
+					>
+						{fmtPicker(logDate)}{#if alreadyLogged}
+							· already logged — pick another night{/if}
+					</p>
 				</div>
 				<div class="space-y-2">
 					<Label for="went_to_bed">Went to bed</Label>
@@ -137,7 +244,7 @@
 				{/if}
 			</Card.Content>
 			<Card.Footer>
-				<Button type="submit" disabled={submitting}>
+				<Button type="submit" disabled={submitting || alreadyLogged}>
 					{submitting ? 'Saving…' : 'Save'}
 				</Button>
 			</Card.Footer>

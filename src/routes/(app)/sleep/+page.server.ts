@@ -29,6 +29,21 @@ export const actions: Actions = {
 			return fail(400, { error: 'Quality must be 1–10.' });
 		}
 
+		// Enforce one-row-per-night. The DB has no unique constraint on
+		// (owner_id, log_date) so this is the only thing stopping duplicates.
+		const { data: existing } = await locals.supabase
+			.from('sleep_logs')
+			.select('id')
+			.eq('owner_id', locals.user!.id)
+			.eq('log_date', log_date)
+			.is('deleted_at', null)
+			.maybeSingle();
+		if (existing) {
+			return fail(409, {
+				error: `A sleep log for ${log_date} already exists. Pick another night or edit the existing one.`
+			});
+		}
+
 		const defs = await loadDefs(locals.supabase, locals.user!.id, 'sleep_logs');
 		const { values: custom, errors } = parseCustomFormData(defs, form);
 		if (Object.keys(errors).length > 0) {

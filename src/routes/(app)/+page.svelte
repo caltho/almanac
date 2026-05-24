@@ -339,7 +339,68 @@
 	}
 
 
+	function habitPeriod(
+		cadence: Cadence,
+		sel: Date
+	): { from: string; to: string } | null {
+		if (cadence === 'weekly') {
+			const start = new Date(sel);
+			const dow = start.getDay() === 0 ? 7 : start.getDay();
+			start.setDate(start.getDate() - (dow - 1));
+			const end = new Date(start);
+			end.setDate(end.getDate() + 6);
+			return { from: localIso(start), to: localIso(end) };
+		}
+		if (cadence === 'monthly') {
+			const start = new Date(sel.getFullYear(), sel.getMonth(), 1);
+			const end = new Date(sel.getFullYear(), sel.getMonth() + 1, 0);
+			return { from: localIso(start), to: localIso(end) };
+		}
+		return null;
+	}
+
 	async function toggleHabit(habit_id: string) {
+		const habit = userData.habits.find((h) => h.id === habit_id);
+		const cadence = (habit?.cadence as Cadence) ?? 'daily';
+		const due = habit ? isHabitDue(habit, today) : true;
+
+		// Untoggling a "done" weekly/monthly habit on the dashboard: clear
+		// every check in the period rather than just today, otherwise the
+		// card stays "done" because some other day in the period still has
+		// a tick.
+		if (!due) {
+			const range = habitPeriod(cadence, startOfToday);
+			if (range) {
+				const prev = userData.habitChecks.filter(
+					(c) =>
+						c.habit_id === habit_id &&
+						c.check_date >= range.from &&
+						c.check_date <= range.to
+				);
+				for (const c of prev) {
+					userData.toggleHabitCheck(habit_id, c.check_date, false);
+				}
+				try {
+					const res = await fetch('/tasks/habits/api', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							op: 'clearRange',
+							habit_id,
+							from_date: range.from,
+							to_date: range.to
+						})
+					});
+					if (!res.ok) throw new Error();
+				} catch {
+					for (const c of prev) {
+						userData.toggleHabitCheck(habit_id, c.check_date, true);
+					}
+				}
+				return;
+			}
+		}
+
 		const wasTicked = userData.habitTickedOn(habit_id, today);
 		userData.toggleHabitCheck(habit_id, today, !wasTicked);
 		try {

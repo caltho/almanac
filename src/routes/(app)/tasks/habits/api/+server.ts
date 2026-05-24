@@ -8,13 +8,16 @@ import type { RequestHandler } from './$types';
  */
 
 const CADENCES = new Set(['daily', 'weekdays', 'weekly', 'monthly']);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) throw error(401);
 	const body = (await request.json()) as {
-		op: 'toggle' | 'archive' | 'rename' | 'setCadence';
+		op: 'toggle' | 'archive' | 'rename' | 'setCadence' | 'clearRange';
 		habit_id?: string;
 		check_date?: string;
+		from_date?: string;
+		to_date?: string;
 		done?: boolean;
 		name?: string;
 		cadence?: string;
@@ -57,6 +60,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.from('habits')
 			.update({ name })
 			.eq('id', body.habit_id);
+		if (e) throw error(500, e.message);
+		return json({ ok: true });
+	}
+
+	if (body.op === 'clearRange') {
+		// Untoggle every check inside [from_date, to_date] for the habit —
+		// used to "untick" a weekly/monthly habit that's marked done by a
+		// check on some other day in the period.
+		if (
+			!body.habit_id ||
+			!body.from_date ||
+			!body.to_date ||
+			!DATE_RE.test(body.from_date) ||
+			!DATE_RE.test(body.to_date)
+		) {
+			throw error(400, 'Bad input');
+		}
+		const { error: e } = await locals.supabase
+			.from('habit_checks')
+			.delete()
+			.eq('habit_id', body.habit_id)
+			.gte('check_date', body.from_date)
+			.lte('check_date', body.to_date);
 		if (e) throw error(500, e.message);
 		return json({ ok: true });
 	}

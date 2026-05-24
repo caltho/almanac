@@ -118,7 +118,72 @@
 
 	// --- mutations -------------------------------------------------------
 
+	// Period covered by the cadence on `sel` — used when untoggling so we
+	// can remove every check that's making the card show "done", not just
+	// today's. Returns null for daily/weekdays (no range — those untoggle
+	// against the selected day directly).
+	function periodFor(
+		cadence: Cadence,
+		sel: Date
+	): { from: string; to: string } | null {
+		if (cadence === 'weekly') {
+			const start = new Date(sel);
+			const dow = start.getDay() === 0 ? 7 : start.getDay();
+			start.setDate(start.getDate() - (dow - 1));
+			const end = new Date(start);
+			end.setDate(end.getDate() + 6);
+			return { from: localIso(start), to: localIso(end) };
+		}
+		if (cadence === 'monthly') {
+			const start = new Date(sel.getFullYear(), sel.getMonth(), 1);
+			const end = new Date(sel.getFullYear(), sel.getMonth() + 1, 0);
+			return { from: localIso(start), to: localIso(end) };
+		}
+		return null;
+	}
+
 	async function toggle(habit: Habit) {
+		const cadence = (habit.cadence as Cadence) ?? 'daily';
+		const due = isDue(habit);
+
+		// Untoggling a "done" weekly/monthly habit: wipe every check in the
+		// period so the card actually flips back. Otherwise just toggling
+		// the selected day adds another check and leaves the original one
+		// in place, so the cadence-aware "done" state never clears.
+		if (!due) {
+			const range = periodFor(cadence, selectedDate);
+			if (range) {
+				const prev = userData.habitChecks.filter(
+					(c) =>
+						c.habit_id === habit.id &&
+						c.check_date >= range.from &&
+						c.check_date <= range.to
+				);
+				for (const c of prev) {
+					userData.toggleHabitCheck(habit.id, c.check_date, false);
+				}
+				try {
+					const res = await fetch('/tasks/habits/api', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							op: 'clearRange',
+							habit_id: habit.id,
+							from_date: range.from,
+							to_date: range.to
+						})
+					});
+					if (!res.ok) throw new Error();
+				} catch {
+					for (const c of prev) {
+						userData.toggleHabitCheck(habit.id, c.check_date, true);
+					}
+				}
+				return;
+			}
+		}
+
+		// Daily/weekdays, or activating any habit: single-day toggle.
 		const wasTicked = tickedOn(habit.id, selectedIso);
 		userData.toggleHabitCheck(habit.id, selectedIso, !wasTicked);
 		try {

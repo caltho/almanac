@@ -35,6 +35,30 @@
 		viewMonth = today.getMonth();
 	}
 
+	// Touch swipe → month nav. Horizontal travel of ≥60px with the vertical
+	// drift staying under half that wins, so a vertical scroll doesn't get
+	// hijacked into a month change. Pointer events fire for touch + pen +
+	// mouse; only treat 'touch' as a swipe so desktop drags don't trigger.
+	let touchStartX = 0;
+	let touchStartY = 0;
+	let tracking = false;
+
+	function onPointerDown(e: PointerEvent) {
+		if (e.pointerType !== 'touch') return;
+		tracking = true;
+		touchStartX = e.clientX;
+		touchStartY = e.clientY;
+	}
+	function onPointerUp(e: PointerEvent) {
+		if (!tracking || e.pointerType !== 'touch') return;
+		tracking = false;
+		const dx = e.clientX - touchStartX;
+		const dy = e.clientY - touchStartY;
+		if (Math.abs(dx) < 60) return;
+		if (Math.abs(dy) > Math.abs(dx) * 0.5) return; // mostly vertical, ignore
+		shiftMonth(dx < 0 ? 1 : -1); // swipe left → next month
+	}
+
 	// Build a 6×7 grid of days starting on Monday. Rows can spill into the
 	// previous and next months — those cells are still tappable but visually
 	// muted so the focus stays on the current month.
@@ -176,8 +200,14 @@
 </header>
 
 <div class="grid gap-4 lg:grid-cols-[1fr_280px]">
-	<!-- Month grid -->
-	<div class="space-y-1">
+	<!-- Month grid — touch swipe left/right switches month on mobile -->
+	<div
+		class="space-y-1 touch-pan-y"
+		role="presentation"
+		onpointerdown={onPointerDown}
+		onpointerup={onPointerUp}
+		onpointercancel={() => (tracking = false)}
+	>
 		<div class="grid grid-cols-7 gap-1 text-[10px] tracking-widest text-muted-foreground uppercase">
 			{#each WEEKDAYS as w (w)}
 				<div class="text-center">{w}</div>
