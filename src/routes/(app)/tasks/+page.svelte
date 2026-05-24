@@ -5,6 +5,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { AttrsRenderer } from '$lib/custom-attrs';
 	import Plus from '@lucide/svelte/icons/plus';
+	import Check from '@lucide/svelte/icons/check';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
@@ -530,8 +531,13 @@
 						variant="ghost"
 						onclick={() => (showAddItem[l.id] = !showAddItem[l.id])}
 					>
-						<Plus class="size-4" />
-						<span>{showAddItem[l.id] ? 'Close' : 'Add'}</span>
+						{#if showAddItem[l.id]}
+							<Check class="size-4" />
+							<span>Save</span>
+						{:else}
+							<Plus class="size-4" />
+							<span>Add</span>
+						{/if}
 					</Button>
 				{/if}
 				<DropdownMenu.Root>
