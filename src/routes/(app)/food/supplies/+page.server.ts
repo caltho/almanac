@@ -4,7 +4,7 @@ import { SHOPPING_PERIODS, type ShoppingPeriod } from '$lib/shopping';
 import { isPaletteToken } from '$lib/palette';
 
 // Data flows through (app)/+layout.server.ts → userData store. These actions
-// stay for plain-form fallbacks; the JS path uses /food/shopping/api for
+// stay for plain-form fallbacks; the JS path uses /food/supplies/api for
 // instant optimistic updates (see +page.svelte and the sibling +server.ts).
 
 function isValidPeriod(v: string): v is ShoppingPeriod {

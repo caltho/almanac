@@ -3,8 +3,8 @@
 // auto-updates as new domains land milestone by milestone.
 //
 // Some entries point to a parent route that has its own internal tabs (e.g.
-// /tasks → Tasks | Checklists | Habits | Activities; /food → Shopping |
-// Recipes). Those sub-tabs live in the route's `+layout.svelte`.
+// /tasks → Tasks | Checklists | Habits | Activities; /food → Supplies |
+// Shopping list | Recipes). Those sub-tabs live in the route's `+layout.svelte`.
 
 import type { Component } from 'svelte';
 import BookOpen from '@lucide/svelte/icons/book-open';

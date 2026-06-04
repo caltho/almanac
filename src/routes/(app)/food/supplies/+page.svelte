@@ -3,8 +3,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import { goto } from '$app/navigation';
 	import Plus from '@lucide/svelte/icons/plus';
 	import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
+	import ListPlus from '@lucide/svelte/icons/list-plus';
 	import Bell from '@lucide/svelte/icons/bell';
 	import Check from '@lucide/svelte/icons/check';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -13,7 +15,12 @@
 	import ColorTrigger from '$lib/components/ColorTrigger.svelte';
 	import OptionTrigger from '$lib/components/OptionTrigger.svelte';
 	import { paletteHex, paletteLabel, type PaletteToken } from '$lib/palette';
-	import { useUserData, type ShoppingItem } from '$lib/stores/userData.svelte';
+	import {
+		useUserData,
+		type ShoppingItem,
+		type ShoppingListItem
+	} from '$lib/stores/userData.svelte';
+	import { normalizeName } from '$lib/shopping-list';
 	import {
 		PERIOD_LABELS,
 		SHOPPING_PERIODS,
@@ -32,6 +39,8 @@
 	let newColor = $state<PaletteToken | null>(null);
 	let busy = $state<Record<string, boolean>>({});
 	let editing = $state(false);
+	let booting = $state(false);
+	let bootMsg = $state('');
 
 	type Annotated = {
 		item: ShoppingItem;
@@ -95,7 +104,7 @@
 		userData.updateShoppingItem(item.id, optimistic);
 
 		try {
-			const res = await fetch('/food/shopping/api', {
+			const res = await fetch('/food/supplies/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setStatus', id: item.id, status: next })
@@ -120,7 +129,7 @@
 		const prev = { ...item };
 		userData.updateShoppingItem(item.id, { restock_period: period });
 		try {
-			const res = await fetch('/food/shopping/api', {
+			const res = await fetch('/food/supplies/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setPeriod', id: item.id, restock_period: period })
@@ -135,7 +144,7 @@
 		const prev = { ...item };
 		userData.updateShoppingItem(item.id, { color });
 		try {
-			const res = await fetch('/food/shopping/api', {
+			const res = await fetch('/food/supplies/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ op: 'setColor', id: item.id, color })
@@ -160,6 +169,42 @@
 		}
 	}
 
+	// "Boot to shopping list": push every supply in the Buy section onto the
+	// one-shot shopping list, skipping anything already on it (by name). Each
+	// added row keeps a link back to its supply item so a later "Clear & mark
+	// supplies stocked" can flip these rows to stocked.
+	async function bootToList() {
+		booting = true;
+		bootMsg = '';
+		const onList = userData.shoppingListNames();
+		const items = userData.shoppingItems
+			.filter((i) => i.status === 'buy')
+			.filter((i) => !onList.has(normalizeName(i.name)))
+			.map((i) => ({ name: i.name, source: 'supply', supply_item_id: i.id }));
+
+		if (items.length === 0) {
+			bootMsg = 'Everything in Buy is already on the list.';
+			booting = false;
+			return;
+		}
+
+		try {
+			const res = await fetch('/food/shopping-list/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'add', items })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const body = (await res.json()) as { items: ShoppingListItem[] };
+			userData.addShoppingListItems(body.items);
+			await goto('/food/shopping-list');
+		} catch {
+			bootMsg = 'Could not add to the shopping list.';
+		} finally {
+			booting = false;
+		}
+	}
+
 	function lastPurchasedLabel(at: string | null): string {
 		if (!at) return 'Never bought';
 		return `Bought ${relativeDays(new Date(at))}`;
@@ -173,12 +218,23 @@
 
 <header class="flex flex-wrap items-end justify-between gap-3">
 	<div class="space-y-1">
-		<h2 class="text-xl font-semibold tracking-tight">Shopping</h2>
+		<h2 class="text-xl font-semibold tracking-tight">Supplies</h2>
 		<p class="text-sm text-muted-foreground">
-			What's on the next shop, plus the stuff you restock on a schedule.
+			The stuff you keep stocked. Restock on a schedule, then boot the Buy list over to your
+			shopping list when it's time to shop.
 		</p>
 	</div>
 	<div class="flex items-center gap-1">
+		<Button
+			size="sm"
+			variant="outline"
+			onclick={bootToList}
+			disabled={booting || grouped.buy.length === 0}
+			title="Add everything in Buy to your shopping list"
+		>
+			<ListPlus class="size-4" />
+			<span>{booting ? 'Adding…' : 'Boot to shopping list'}</span>
+		</Button>
 		<Button size="sm" onclick={() => (showNew = !showNew)}>
 			<Plus class="size-4" />
 			<span>{showNew ? 'Close' : 'Add item'}</span>
@@ -198,6 +254,10 @@
 		</Button>
 	</div>
 </header>
+
+{#if bootMsg}
+	<p class="text-sm text-muted-foreground">{bootMsg}</p>
+{/if}
 
 {#if showNew}
 	<form
@@ -327,9 +387,7 @@
 				{#if hex}
 					<span class="size-3 rounded-full" style={`background:${hex}`}></span>
 				{:else}
-					<span
-						class="size-3 rounded-full border border-dashed border-muted-foreground/40"
-					></span>
+					<span class="size-3 rounded-full border border-dashed border-muted-foreground/40"></span>
 				{/if}
 			</span>
 		{/if}

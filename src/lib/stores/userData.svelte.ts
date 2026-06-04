@@ -129,6 +129,11 @@ export type ShoppingItem = Pick<
 	| 'updated_at'
 >;
 
+export type ShoppingListItem = Pick<
+	T['shopping_list_items']['Row'],
+	'id' | 'owner_id' | 'name' | 'checked' | 'source' | 'supply_item_id' | 'created_at'
+>;
+
 export type Recipe = Pick<
 	T['recipes']['Row'],
 	| 'id'
@@ -232,6 +237,7 @@ export type HotData = {
 	eventPeople: EventPerson[];
 	taskLists: TaskList[];
 	taskListItems: TaskListItem[];
+	shoppingListItems: ShoppingListItem[];
 	hydratedAt: number;
 };
 
@@ -262,6 +268,7 @@ export class UserData {
 	eventPeople = $state<EventPerson[]>([]);
 	taskLists = $state<TaskList[]>([]);
 	taskListItems = $state<TaskListItem[]>([]);
+	shoppingListItems = $state<ShoppingListItem[]>([]);
 	hydratedAt = $state(0);
 
 	hydrate(seed: HotData) {
@@ -291,6 +298,7 @@ export class UserData {
 		this.eventPeople = seed.eventPeople;
 		this.taskLists = seed.taskLists;
 		this.taskListItems = seed.taskListItems;
+		this.shoppingListItems = seed.shoppingListItems;
 		this.hydratedAt = seed.hydratedAt;
 	}
 
@@ -447,6 +455,26 @@ export class UserData {
 	}
 	removeShoppingItem(id: string) {
 		this.shoppingItems = this.shoppingItems.filter((x) => x.id !== id);
+	}
+
+	// --- Shopping list (the one-shot buy list) -------------------------------
+	addShoppingListItems(items: ShoppingListItem[]) {
+		if (items.length === 0) return;
+		this.shoppingListItems = [...this.shoppingListItems, ...items];
+	}
+	updateShoppingListItem(id: string, patch: Partial<ShoppingListItem>) {
+		const i = this.shoppingListItems.findIndex((x) => x.id === id);
+		if (i >= 0) this.shoppingListItems[i] = { ...this.shoppingListItems[i], ...patch };
+	}
+	removeShoppingListItem(id: string) {
+		this.shoppingListItems = this.shoppingListItems.filter((x) => x.id !== id);
+	}
+	clearShoppingList() {
+		this.shoppingListItems = [];
+	}
+	/** Names already on the list, lower-cased — used to skip duplicates. */
+	shoppingListNames(): Set<string> {
+		return new Set(this.shoppingListItems.map((x) => x.name.trim().toLowerCase()));
 	}
 
 	defsFor(table: string): CustomAttrDef[] {

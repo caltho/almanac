@@ -13,8 +13,15 @@
 	import History from '@lucide/svelte/icons/history';
 	import Save from '@lucide/svelte/icons/save';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import ListPlus from '@lucide/svelte/icons/list-plus';
+	import { useUserData, type ShoppingListItem } from '$lib/stores/userData.svelte';
+	import { parseIngredientLines, normalizeName } from '$lib/shopping-list';
 
 	let { data, form } = $props();
+
+	const userData = useUserData();
+	let addingToList = $state(false);
+	let listMsg = $state('');
 
 	// svelte-ignore state_referenced_locally
 	let name = $state(data.recipe.name);
@@ -28,6 +35,44 @@
 	let snapshotting = $state(false);
 	let snapshotNotes = $state('');
 	let showHistory = $state(false);
+
+	// Pull the (possibly unsaved) ingredient lines onto the shopping list,
+	// skipping anything already on it.
+	async function addIngredientsToList() {
+		listMsg = '';
+		const lines = parseIngredientLines(ingredients);
+		const onList = userData.shoppingListNames();
+		const items = lines
+			.filter((name) => !onList.has(normalizeName(name)))
+			.map((name) => ({ name, source: 'recipe' }));
+
+		if (lines.length === 0) {
+			listMsg = 'No ingredients to add yet.';
+			return;
+		}
+		if (items.length === 0) {
+			listMsg = 'All ingredients are already on the shopping list.';
+			return;
+		}
+
+		addingToList = true;
+		try {
+			const res = await fetch('/food/shopping-list/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ op: 'add', items })
+			});
+			if (!res.ok) throw new Error(await res.text());
+			const body = (await res.json()) as { items: ShoppingListItem[] };
+			userData.addShoppingListItems(body.items);
+			const n = body.items.length;
+			listMsg = `Added ${n} ingredient${n === 1 ? '' : 's'} to your shopping list.`;
+		} catch {
+			listMsg = 'Could not add ingredients to the shopping list.';
+		} finally {
+			addingToList = false;
+		}
+	}
 
 	function fmtDate(d: string): string {
 		const dt = new Date(d);
@@ -82,13 +127,28 @@
 
 		<div class="grid gap-5 lg:grid-cols-2">
 			<div class="space-y-1.5">
-				<Label class="text-xs">Ingredients</Label>
+				<div class="flex items-center justify-between gap-2">
+					<Label class="text-xs">Ingredients</Label>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onclick={addIngredientsToList}
+						disabled={addingToList}
+					>
+						<ListPlus class="size-4" />
+						<span>{addingToList ? 'Adding…' : 'Add to shopping list'}</span>
+					</Button>
+				</div>
 				<RichTextEditor
 					bind:value={ingredients}
 					name="ingredients_html"
 					placeholder="What's in it…"
 					minHeight="14rem"
 				/>
+				{#if listMsg}
+					<p class="text-xs text-muted-foreground">{listMsg}</p>
+				{/if}
 			</div>
 			<div class="space-y-1.5">
 				<Label class="text-xs">Method</Label>

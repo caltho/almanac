@@ -63,7 +63,8 @@ export async function loadHotData(
 		{ data: people },
 		{ data: eventPeople },
 		{ data: taskLists },
-		{ data: taskListItems }
+		{ data: taskListItems },
+		{ data: shoppingListItems }
 	] = await Promise.all([
 		supabase
 			.from('profiles')
@@ -192,7 +193,11 @@ export async function loadHotData(
 		supabase
 			.from('task_list_items')
 			.select('id, list_id, title, checked, order_index')
-			.order('order_index', { ascending: true })
+			.order('order_index', { ascending: true }),
+		supabase
+			.from('shopping_list_items')
+			.select('id, owner_id, name, checked, source, supply_item_id, created_at')
+			.order('created_at', { ascending: true })
 	]);
 
 	return {
@@ -222,6 +227,7 @@ export async function loadHotData(
 		eventPeople: eventPeople ?? [],
 		taskLists: taskLists ?? [],
 		taskListItems: taskListItems ?? [],
+		shoppingListItems: shoppingListItems ?? [],
 		hydratedAt: Date.now()
 	};
 }

@@ -1054,6 +1054,44 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_list_items: {
+        Row: {
+          checked: boolean
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          source: string
+          supply_item_id: string | null
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          source?: string
+          supply_item_id?: string | null
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          source?: string
+          supply_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_supply_item_id_fkey"
+            columns: ["supply_item_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sleep_logs: {
         Row: {
           created_at: string
