@@ -2,7 +2,6 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { loadDefs } from '$lib/custom-attrs/server';
 import { parseCustomFormData } from '$lib/custom-attrs/validate';
-import { sanitizeHtml } from '$lib/server/sanitize-html';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const [{ data: project }, { data: subprojects }, { data: tasks }, defs] = await Promise.all([
@@ -34,14 +33,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 export const actions: Actions = {
 	update: async ({ request, params, locals }) => {
-		// Color and status are no longer part of this form — they're set
-		// directly via /projects/[id]/api (click the dot, click the status pill).
-		// This action only handles the keyboard-input fields: name, description,
-		// rich-text body, and custom attrs.
+		// Color and status are set directly via /projects/[id]/api (click the
+		// dot, click the status pill); the rich-text notes are an ordered list
+		// of project_blocks, also edited via that endpoint. This action only
+		// handles the metadata fields: name, description, and custom attrs.
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim() || null;
-		const body_html = sanitizeHtml(String(form.get('body_html') ?? ''));
 
 		if (!name) return fail(400, { error: 'Name required.' });
 
@@ -53,7 +51,7 @@ export const actions: Actions = {
 
 		const { error: e } = await locals.supabase
 			.from('projects')
-			.update({ name, description, body_html, custom: custom as never })
+			.update({ name, description, custom: custom as never })
 			.eq('id', params.id);
 		if (e) return fail(500, { error: e.message });
 		return { saved: true };

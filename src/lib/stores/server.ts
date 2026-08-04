@@ -51,6 +51,7 @@ export async function loadHotData(
 		{ data: recentTransactions },
 		{ data: assets },
 		{ data: projects },
+		{ data: projectBlocks },
 		{ data: datasets },
 		{ data: shoppingItems },
 		{ data: activities },
@@ -129,8 +130,12 @@ export async function loadHotData(
 			.order('name', { ascending: true }),
 		supabase
 			.from('projects')
-			.select('id, owner_id, parent_id, name, description, body_html, status, color, updated_at')
+			.select('id, owner_id, parent_id, name, description, status, color, updated_at')
 			.order('name', { ascending: true }),
+		supabase
+			.from('project_blocks')
+			.select('id, owner_id, project_id, heading, body_html, order_index')
+			.order('order_index', { ascending: true }),
 		supabase
 			.from('datasets')
 			.select('id, owner_id, name, columns, updated_at')
@@ -214,6 +219,7 @@ export async function loadHotData(
 		recentTransactions: recentTransactions ?? [],
 		assets: assets ?? [],
 		projects: projects ?? [],
+		projectBlocks: projectBlocks ?? [],
 		datasets: datasets ?? [],
 		shoppingItems: shoppingItems ?? [],
 		activities: activities ?? [],

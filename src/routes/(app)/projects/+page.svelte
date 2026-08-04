@@ -31,6 +31,28 @@
 		return out;
 	});
 
+	// Card preview text: the first non-empty note block (by order) per project.
+	const previewByProject = $derived.by(() => {
+		const byProject = new Map<string, typeof userData.projectBlocks>();
+		for (const b of userData.projectBlocks) {
+			const arr = byProject.get(b.project_id) ?? [];
+			arr.push(b);
+			byProject.set(b.project_id, arr);
+		}
+		const out = new Map<string, string>();
+		for (const [pid, arr] of byProject) {
+			arr.sort((a, b) => a.order_index - b.order_index);
+			for (const b of arr) {
+				const text = htmlPreview(b.body_html);
+				if (text) {
+					out.set(pid, text);
+					break;
+				}
+			}
+		}
+		return out;
+	});
+
 	const visible = $derived.by(() => {
 		const tops = userData.projects.filter((p) => !p.parent_id);
 		if (filter === 'all') return tops;
@@ -50,7 +72,6 @@
 		{ id: 'archived', label: 'Archived' },
 		{ id: 'all', label: 'All' }
 	];
-
 </script>
 
 <header class="flex flex-wrap items-end justify-between gap-3">
@@ -144,6 +165,7 @@
 		{#each visible as p (p.id)}
 			{@const subs = childCount.get(p.id) ?? 0}
 			{@const accent = paletteHex(p.color) ?? 'var(--muted-foreground)'}
+			{@const preview = previewByProject.get(p.id)}
 			<li>
 				<a
 					href={`/projects/${p.id}`}
@@ -168,8 +190,8 @@
 
 							{#if p.description}
 								<p class="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-							{:else if p.body_html}
-								<p class="line-clamp-3 text-xs text-muted-foreground">{htmlPreview(p.body_html)}</p>
+							{:else if preview}
+								<p class="line-clamp-3 text-xs text-muted-foreground">{preview}</p>
 							{:else}
 								<p class="text-xs text-muted-foreground italic">No notes yet</p>
 							{/if}

@@ -99,15 +99,12 @@ export type Asset = Pick<
 
 export type Project = Pick<
 	T['projects']['Row'],
-	| 'id'
-	| 'owner_id'
-	| 'parent_id'
-	| 'name'
-	| 'description'
-	| 'body_html'
-	| 'status'
-	| 'color'
-	| 'updated_at'
+	'id' | 'owner_id' | 'parent_id' | 'name' | 'description' | 'status' | 'color' | 'updated_at'
+>;
+
+export type ProjectBlock = Pick<
+	T['project_blocks']['Row'],
+	'id' | 'owner_id' | 'project_id' | 'heading' | 'body_html' | 'order_index'
 >;
 
 export type Dataset = Pick<
@@ -224,6 +221,7 @@ export type HotData = {
 	recentTransactions: Transaction[];
 	assets: Asset[];
 	projects: Project[];
+	projectBlocks: ProjectBlock[];
 	datasets: Dataset[];
 	shoppingItems: ShoppingItem[];
 	activities: Activity[];
@@ -255,6 +253,7 @@ export class UserData {
 	recentTransactions = $state<Transaction[]>([]);
 	assets = $state<Asset[]>([]);
 	projects = $state<Project[]>([]);
+	projectBlocks = $state<ProjectBlock[]>([]);
 	datasets = $state<Dataset[]>([]);
 	shoppingItems = $state<ShoppingItem[]>([]);
 	activities = $state<Activity[]>([]);
@@ -285,6 +284,7 @@ export class UserData {
 		this.recentTransactions = seed.recentTransactions;
 		this.assets = seed.assets;
 		this.projects = seed.projects;
+		this.projectBlocks = seed.projectBlocks;
 		this.datasets = seed.datasets;
 		this.shoppingItems = seed.shoppingItems;
 		this.activities = seed.activities;
@@ -323,6 +323,23 @@ export class UserData {
 	}
 	removeTaskListItem(id: string) {
 		this.taskListItems = this.taskListItems.filter((x) => x.id !== id);
+	}
+
+	// --- Project blocks ------------------------------------------------------
+	addProjectBlock(b: ProjectBlock) {
+		this.projectBlocks = [...this.projectBlocks, b];
+	}
+	replaceProjectBlock(oldId: string, b: ProjectBlock) {
+		const i = this.projectBlocks.findIndex((x) => x.id === oldId);
+		if (i >= 0) this.projectBlocks[i] = b;
+		else this.projectBlocks = [...this.projectBlocks, b];
+	}
+	updateProjectBlock(id: string, patch: Partial<ProjectBlock>) {
+		const i = this.projectBlocks.findIndex((x) => x.id === id);
+		if (i >= 0) this.projectBlocks[i] = { ...this.projectBlocks[i], ...patch };
+	}
+	removeProjectBlock(id: string) {
+		this.projectBlocks = this.projectBlocks.filter((x) => x.id !== id);
 	}
 
 	// --- Event ↔ people junction ---------------------------------------------
