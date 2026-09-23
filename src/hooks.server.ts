@@ -2,6 +2,8 @@ import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { redirect } from '@sveltejs/kit';
 import { createSupabaseServerClient } from '$lib/db/server';
+import { DEMO_COOKIE } from '$lib/demo';
+import { createDemoServerClient, DEMO_AUTH, refuseDemoWrite } from '$lib/demo/server';
 
 /**
  * Auth guard:
@@ -11,7 +13,7 @@ import { createSupabaseServerClient } from '$lib/db/server';
  * - Static assets skip the guard entirely.
  */
 
-const PUBLIC_PATHS = new Set(['/login']);
+const PUBLIC_PATHS = new Set(['/login', '/demo', '/demo/exit']);
 const AUTH_CALLBACKS = ['/auth/callback', '/auth/signout'];
 
 function isStaticAsset(path: string) {
@@ -26,7 +28,38 @@ function isStaticAsset(path: string) {
 	);
 }
 
+/**
+ * Demo mode (see src/lib/demo/CLAUDE.md): with the demo cookie set, the
+ * request gets an in-memory Supabase client over fixture data and a fixed
+ * session, so nothing downstream can reach the real project. Writes are
+ * refused here, before any route runs. Without the cookie this is a no-op.
+ */
+const demo: Handle = async ({ event, resolve }) => {
+	event.locals.demo = !!event.cookies.get(DEMO_COOKIE);
+
+	// Finishing a real magic-link sign-in always leaves the demo.
+	if (event.locals.demo && event.url.pathname === '/auth/callback') {
+		event.cookies.delete(DEMO_COOKIE, { path: '/' });
+		event.locals.demo = false;
+	}
+	if (!event.locals.demo) return resolve(event);
+
+	event.locals.supabase = createDemoServerClient();
+	event.locals.safeGetSession = async () => DEMO_AUTH;
+
+	const refused = refuseDemoWrite(event);
+	if (refused) return refused;
+
+	const response = await resolve(event);
+	// Demo pages must never be cached anywhere a signed-in visit could reuse them.
+	if (!isStaticAsset(event.url.pathname)) {
+		response.headers.set('cache-control', 'private, no-store');
+	}
+	return response;
+};
+
 const supabase: Handle = async ({ event, resolve }) => {
+	if (event.locals.demo) return resolve(event);
 	event.locals.supabase = createSupabaseServerClient(event);
 
 	// Per-request cache of the validated session. `getUser()` is the only way
@@ -84,4 +117,4 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(supabase, authGuard);
+export const handle = sequence(demo, supabase, authGuard);

@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireUserApi } from '$lib/auth/guards';
 import { getAnthropicClient, DEFAULT_MODEL, buildSystemPrompt, createTools } from '$lib/ai';
+import { DEMO_ASSISTANT_REPLY } from '$lib/demo/server';
 
 type ChatMessage = {
 	role: 'user' | 'assistant';
@@ -10,6 +11,10 @@ type ChatMessage = {
 
 export const POST: RequestHandler = async (event) => {
 	const user = await requireUserApi(event);
+	// Demo mode never reaches Anthropic (or spends anything): canned reply.
+	if (event.locals.demo) {
+		return json({ role: 'assistant' as const, content: DEMO_ASSISTANT_REPLY, usage: null });
+	}
 	const body = (await event.request.json()) as { messages?: ChatMessage[] };
 	const history = body.messages ?? [];
 

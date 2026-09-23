@@ -60,3 +60,8 @@
 		</form>
 	{/if}
 </Card.Root>
+
+<div class="space-y-2 text-center">
+	<Button href="/demo" variant="outline" class="w-full" data-sveltekit-reload>Try the demo</Button>
+	<p class="text-xs text-muted-foreground">No account needed. Explore with sample data.</p>
+</div>

@@ -7,6 +7,7 @@ SvelteKit route tree. Two route groups: `(auth)` for pre-login screens, `(app)` 
 - `(auth)/` — `login`, magic-link callback, logout redirect. No layout chrome.
 - `(app)/` — authenticated shell. Layout loads the session and redirects unauthenticated users to `/login`. Children: `journal` (with quick-notes pinned at the top), `calendar` (Month / Events / Birthdays sub-tabs), `sleep`, `tasks` (the **Doing** umbrella with `tasks`, `checklists`, `habits`, `activities` sub-tabs), `food`, `finance` (with `assets` sub-area for Stuff + Net worth), `projects` (with `datasets` sub-area), `assistant`, `settings` (with `fields` and `shares` sub-tabs — every domain's custom-attribute editor lives at `/settings/fields`).
 - `api/ai/` — Anthropic tool-use endpoint (M7).
+- `demo/`: `GET /demo` enters demo mode (sample data, no account) and `GET /demo/exit` leaves it. Both are public. See [src/lib/demo/CLAUDE.md](../lib/demo/CLAUDE.md): in demo mode `locals.supabase` is an in-memory client and non-GET requests are refused in `hooks.server.ts`.
 
 ## Rules
 

@@ -7,6 +7,7 @@
 	import LogOut from '@lucide/svelte/icons/log-out';
 	import { NAV_ITEMS } from '$lib/nav';
 	import { setUserData } from '$lib/stores/userData.svelte';
+	import DemoBanner from '$lib/demo/DemoBanner.svelte';
 
 	let { children, data } = $props();
 
@@ -41,6 +42,9 @@
 </script>
 
 <div class="min-h-screen bg-background">
+	{#if data.demo}
+		<DemoBanner />
+	{/if}
 	<header class="border-b border-border/60">
 		<div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
 			<a href="/" class="flex items-center gap-2 font-semibold tracking-tight">

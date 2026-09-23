@@ -10,6 +10,8 @@ declare global {
 			safeGetSession: () => Promise<{ session: Session | null; user: User | null }>;
 			session: Session | null;
 			user: User | null;
+			/** Demo mode: `supabase` is the in-memory fixture client. See src/lib/demo/CLAUDE.md. */
+			demo: boolean;
 		}
 		interface PageData {
 			session: Session | null;

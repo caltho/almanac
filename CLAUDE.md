@@ -41,7 +41,9 @@ src/lib/ai/          # Anthropic client, tools, chat loop
 src/lib/finance/     # CSV import, rule engine, pg_trgm categoriser
 src/lib/stores/      # client-side userData store hydrated from (app)/+layout.server.ts
 src/lib/sync/        # STUB — deferred offline-sync extension points
+src/lib/demo/        # demo mode: in-memory Supabase client + generated fixtures for portfolio visitors
 src/routes/(auth)/   # auth screens
+src/routes/demo/     # /demo (enter demo mode) and /demo/exit
 src/routes/(app)/    # authenticated app routes (journal, sleep, tasks, finance, assets, projects, datasets, settings)
 src/routes/api/ai/   # AI chat endpoint (tool-use loop)
 ```
